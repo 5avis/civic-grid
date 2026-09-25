@@ -702,3 +702,101 @@ html, body {
 .status-panel-fixed {
   width: 140px;
 }
+
+/* ==========================================================================
+   User Login, Role Badges & Dual Status Toggle Buttons
+   ========================================================================== */
+
+/* Resolved & Not Resolved Toggle Buttons */
+.xp-btn-resolved {
+  background: linear-gradient(180deg, #f0fdf4 0%, #dcfce7 50%, #bbf7d0 100%) !important;
+  border: 1px solid #86efac !important;
+  color: #166534 !important;
+  font-weight: 700 !important;
+  cursor: pointer;
+}
+.xp-btn-resolved:hover:not(:disabled) {
+  background: linear-gradient(180deg, #dcfce7 0%, #bbf7d0 100%) !important;
+  border-color: #4ade80 !important;
+}
+
+.xp-btn-not-resolved {
+  background: linear-gradient(180deg, #fff7ed 0%, #ffedd5 50%, #fed7aa 100%) !important;
+  border: 1px solid #fdba74 !important;
+  color: #9a3412 !important;
+  font-weight: 700 !important;
+  cursor: pointer;
+}
+.xp-btn-not-resolved:hover:not(:disabled) {
+  background: linear-gradient(180deg, #ffedd5 0%, #fed7aa 100%) !important;
+  border-color: #f97316 !important;
+}
+
+/* Disabled State for XP Buttons */
+.xp-btn:disabled, .xp-tb-btn:disabled, button:disabled {
+  opacity: 0.5 !important;
+  cursor: not-allowed !important;
+  filter: grayscale(60%);
+  border-color: #d1cfc7 !important;
+}
+
+/* Role Banner on Workspaces */
+.xp-role-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 12px;
+  background: #fdfcee;
+  border: 1px solid #e0d8b0;
+  border-radius: 3px;
+  font-size: 11px;
+  margin-bottom: 10px;
+}
+
+.xp-role-banner.admin {
+  background: #f4faf4;
+  border-color: #c3e6cb;
+  color: #155724;
+}
+
+.xp-role-banner.accountant {
+  background: #fdf8e8;
+  border-color: #fae4a8;
+  color: #7d5a00;
+}
+
+/* XP User Login Dialog Cards */
+.xp-login-user-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border: 2px solid transparent;
+  border-radius: 4px;
+  background: #fbfbf8;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  margin-bottom: 8px;
+}
+
+.xp-login-user-card:hover {
+  background: #eef4fb;
+  border-color: #7f9db9;
+}
+
+.xp-login-user-card.selected {
+  background: #e5f0fa;
+  border-color: #0055ea;
+}
+
+.xp-login-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  background: linear-gradient(180deg, #ffffff 0%, #ece9d8 100%);
+  border: 1px solid #aca899;
+}

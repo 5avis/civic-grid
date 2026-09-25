@@ -12,8 +12,19 @@ const CivicGridApp = (function () {
   let contactsCache = [];
   let accountsCache = [];
   let lightsCache = [];
+  let faultsCache = [];
   let autoRefreshTimer = null;
   let isAutoRefreshEnabled = true;
+
+  // User Role Configuration: ADMIN vs ACCOUNTANT
+  let currentUserRole = 'ADMIN';
+  try {
+    const savedRole = localStorage.getItem('civicgrid_user_role');
+    if (savedRole === 'ADMIN' || savedRole === 'ACCOUNTANT') {
+      currentUserRole = savedRole;
+    }
+  } catch (e) {}
+  let pendingLoginRole = currentUserRole;
 
   // Financial caches for instant currency re-rendering
   let lastJournalEntries = [];
@@ -103,11 +114,119 @@ const CivicGridApp = (function () {
     });
   }
 
+  // =========================================================================
+  // User Role Management: ADMIN vs ACCOUNTANT
+  // =========================================================================
+
+  function initUserRole() {
+    applyUserRole(currentUserRole);
+  }
+
+  function applyUserRole(role) {
+    currentUserRole = role;
+    try {
+      localStorage.setItem('civicgrid_user_role', role);
+    } catch (e) {}
+
+    // Update Toolbar Select
+    const userSelect = document.getElementById('user-role-select');
+    if (userSelect) userSelect.value = role;
+
+    // Update Toolbar Icon
+    const userIcon = document.getElementById('user-role-icon');
+    if (userIcon) userIcon.textContent = role === 'ADMIN' ? '🛡️' : '💼';
+
+    // Update Status Bar User Panel
+    const statusBadge = document.getElementById('status-user-badge');
+    if (statusBadge) {
+      statusBadge.textContent = role === 'ADMIN'
+        ? '🛡️ User: Admin (Full Access)'
+        : '💼 User: Accountant (Finance Only)';
+    }
+
+    // Toolbar buttons: "+ New Light" enabled for Admin only
+    const tbNewLight = document.getElementById('tb-btn-new-light');
+    if (tbNewLight) {
+      tbNewLight.disabled = role !== 'ADMIN';
+      tbNewLight.title = role === 'ADMIN'
+        ? 'Register New Street Light'
+        : 'Admin privileges required to register new street lights';
+    }
+
+    // Street Lights pane: "Register New Light..." button
+    const btnRegPane = document.getElementById('btn-register-light-pane');
+    if (btnRegPane) {
+      btnRegPane.disabled = role !== 'ADMIN';
+      btnRegPane.title = role === 'ADMIN'
+        ? 'Register New Light...'
+        : 'Admin privileges required to register street lights';
+    }
+
+    // Role Banners across workspaces
+    const bannerLights = document.getElementById('role-banner-lights');
+    if (bannerLights) {
+      bannerLights.className = `xp-role-banner ${role.toLowerCase()}`;
+      bannerLights.innerHTML = role === 'ADMIN'
+        ? `<span><strong>⚡ Administrator Mode:</strong> Full control enabled &mdash; you can register lights, adjust dimming levels (0&ndash;100%), and monitor circuit load.</span>`
+        : `<span><strong>🔒 Accountant View:</strong> Grid hardware and dimming adjustments are read-only. Switch to Admin role to control equipment.</span>`;
+    }
+
+    const bannerFaults = document.getElementById('role-banner-faults');
+    if (bannerFaults) {
+      bannerFaults.className = `xp-role-banner ${role.toLowerCase()}`;
+      bannerFaults.innerHTML = role === 'ADMIN'
+        ? `<span><strong>⚡ Administrator Mode:</strong> You have full authority to toggle tickets between <em>Resolved</em> and <em>Not Resolved</em> to manage field repairs.</span>`
+        : `<span><strong>🔒 Accountant View:</strong> Fault tickets are read-only. Only Administrators can resolve or reopen field faults.</span>`;
+    }
+
+    const bannerAcct = document.getElementById('role-banner-accounting');
+    if (bannerAcct) {
+      bannerAcct.className = `xp-role-banner ${role.toLowerCase()}`;
+      bannerAcct.innerHTML = role === 'ACCOUNTANT'
+        ? `<span><strong>💼 Accountant Mode Active:</strong> Full ERP financial authority &mdash; record double-entry transactions, post invoices &amp; bills, audit ledger.</span>`
+        : `<span><strong>ℹ️ Administrator View:</strong> Financial ledger &amp; double-entry journal auditing mode.</span>`;
+    }
+
+    // Re-render table views if caches exist
+    if (lightsCache && lightsCache.length) renderStreetLights(lightsCache);
+    if (faultsCache && faultsCache.length) renderFaultTickets(faultsCache);
+  }
+
+  function switchUserRole(role) {
+    if (role !== 'ADMIN' && role !== 'ACCOUNTANT') role = 'ADMIN';
+    applyUserRole(role);
+    setStatus(`Switched active user to ${role === 'ADMIN' ? 'Administrator' : 'Accountant'}.`);
+  }
+
+  function openLoginModal() {
+    pendingLoginRole = currentUserRole;
+    updateLoginModalCards();
+    document.getElementById('modal-login')?.classList.add('open');
+  }
+
+  function selectLoginCard(role) {
+    pendingLoginRole = role;
+    updateLoginModalCards();
+  }
+
+  function updateLoginModalCards() {
+    const adminCard = document.getElementById('card-user-admin');
+    const accountantCard = document.getElementById('card-user-accountant');
+    if (adminCard) adminCard.classList.toggle('selected', pendingLoginRole === 'ADMIN');
+    if (accountantCard) accountantCard.classList.toggle('selected', pendingLoginRole === 'ACCOUNTANT');
+  }
+
+  function confirmUserLogin() {
+    switchUserRole(pendingLoginRole);
+    closeModal('modal-login');
+  }
+
   // Initialize Application
   function init() {
     initClock();
     initEventListeners();
     initCurrency();
+    initUserRole();
     loadAllMasterData();
     refreshAllData();
 
@@ -429,7 +548,9 @@ const CivicGridApp = (function () {
           <td><strong style="color: ${light.simulatedPowerDraw > 0 ? '#1b5e20' : '#777'};">${light.simulatedPowerDraw != null ? light.simulatedPowerDraw.toFixed(1) : '0.0'} W</strong></td>
           <td>${statusBadge}</td>
           <td>
-            <button class="xp-btn xp-btn-sm" onclick="CivicGridApp.openDimmingModal(${light.id}, '${escapeHtml(light.poleCode)}', ${light.dimmingPercentage})">
+            <button class="xp-btn xp-btn-sm"
+                    ${currentUserRole === 'ADMIN' ? `onclick="CivicGridApp.openDimmingModal(${light.id}, '${escapeHtml(light.poleCode)}', ${light.dimmingPercentage})"` : 'disabled'}
+                    title="${currentUserRole === 'ADMIN' ? 'Adjust light brightness' : 'Admin access required to adjust brightness'}">
               Dim
             </button>
           </td>
@@ -440,14 +561,24 @@ const CivicGridApp = (function () {
 
   // Quick Dimming helper
   async function quickSetDimming(lightId, percent) {
+    if (currentUserRole !== 'ADMIN') {
+      alert('Access Denied: Only Administrator accounts can adjust street light brightness.');
+      return;
+    }
     try {
       setStatus(`Setting light #${lightId} brightness to ${percent}%...`);
       const res = await fetch(`/api/street-lights/${lightId}/dimming`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'X-User-Role': currentUserRole
+        },
         body: JSON.stringify({ dimmingPercentage: percent })
       });
-      if (!res.ok) throw new Error('HTTP ' + res.status);
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'HTTP ' + res.status);
+      }
       await fetchStreetLights();
       await fetchPowerSummary();
       setStatus(`Light #${lightId} dimming set to ${percent}%.`);
@@ -458,6 +589,10 @@ const CivicGridApp = (function () {
 
   // Modal: Register Street Light
   function openRegisterLightModal() {
+    if (currentUserRole !== 'ADMIN') {
+      alert('Access Denied: Only Administrator accounts can register new street lights.');
+      return;
+    }
     document.getElementById('new-light-form')?.reset();
     document.getElementById('new-light-dim-val').textContent = '80%';
     document.getElementById('modal-register-light').classList.add('open');
@@ -465,6 +600,10 @@ const CivicGridApp = (function () {
 
   async function handleRegisterLightSubmit(e) {
     e.preventDefault();
+    if (currentUserRole !== 'ADMIN') {
+      alert('Access Denied: Only Administrator accounts can register new street lights.');
+      return;
+    }
     const poleCode = document.getElementById('new-light-pole').value.trim();
     const zoneId = parseInt(document.getElementById('new-light-zone').value, 10);
     const dimmingPercentage = parseInt(document.getElementById('new-light-dimming').value, 10);
@@ -478,13 +617,16 @@ const CivicGridApp = (function () {
       setStatus(`Registering light pole ${poleCode}...`);
       const res = await fetch('/api/street-lights', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'X-User-Role': currentUserRole
+        },
         body: JSON.stringify({ poleCode, zoneId, dimmingPercentage })
       });
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.message || 'HTTP ' + res.status);
+        throw new Error(err.error || err.message || 'HTTP ' + res.status);
       }
 
       closeModal('modal-register-light');
@@ -500,6 +642,10 @@ const CivicGridApp = (function () {
   let currentDimmingLightId = null;
 
   function openDimmingModal(id, poleCode, currentDim) {
+    if (currentUserRole !== 'ADMIN') {
+      alert('Access Denied: Only Administrator accounts can adjust street light brightness.');
+      return;
+    }
     currentDimmingLightId = id;
     document.getElementById('dimming-pole-label').textContent = `${poleCode} (ID: #${id})`;
     document.getElementById('dimming-slider').value = currentDim;
@@ -510,17 +656,27 @@ const CivicGridApp = (function () {
   async function handleDimmingSubmit(e) {
     e.preventDefault();
     if (!currentDimmingLightId) return;
+    if (currentUserRole !== 'ADMIN') {
+      alert('Access Denied: Only Administrator accounts can adjust street light brightness.');
+      return;
+    }
 
     const dimmingPercentage = parseInt(document.getElementById('dimming-slider').value, 10);
     try {
       setStatus(`Updating light #${currentDimmingLightId} to ${dimmingPercentage}%...`);
       const res = await fetch(`/api/street-lights/${currentDimmingLightId}/dimming`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'X-User-Role': currentUserRole
+        },
         body: JSON.stringify({ dimmingPercentage })
       });
 
-      if (!res.ok) throw new Error('HTTP ' + res.status);
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'HTTP ' + res.status);
+      }
 
       closeModal('modal-dimming');
       await fetchStreetLights();
@@ -541,7 +697,8 @@ const CivicGridApp = (function () {
       const res = await fetch('/api/fault-tickets');
       if (!res.ok) throw new Error('HTTP ' + res.status);
       const tickets = await res.json();
-      renderFaultTickets(tickets);
+      faultsCache = tickets || [];
+      renderFaultTickets(faultsCache);
       setStatus(`Loaded ${tickets.length} fault tickets.`);
     } catch (err) {
       setStatus('Error loading fault tickets: ' + err.message);
@@ -549,6 +706,7 @@ const CivicGridApp = (function () {
   }
 
   function renderFaultTickets(tickets) {
+    faultsCache = tickets || [];
     const tbody = document.getElementById('faults-tbody');
     if (!tbody) return;
 
@@ -557,47 +715,85 @@ const CivicGridApp = (function () {
       return;
     }
 
+    const isAdmin = currentUserRole === 'ADMIN';
+
     tbody.innerHTML = tickets.map((t) => {
       const isResolved = t.status === 'RESOLVED';
       const statusBadge = isResolved
         ? `<span class="xp-badge xp-badge-resolved">RESOLVED</span>`
-        : `<span class="xp-badge xp-badge-fault">OPEN</span>`;
+        : `<span class="xp-badge xp-badge-fault">NOT RESOLVED</span>`;
 
-      const resolveBtn = isResolved
-        ? `<span style="color: #666; font-size: 10px;">Resolved</span>`
-        : `<button class="xp-btn xp-btn-sm xp-btn-default" onclick="CivicGridApp.resolveFault(${t.id})">Resolve Fault</button>`;
+      // Two options: "Resolved" & "Not Resolved"
+      // If clicked on resolved -> changes to not resolved
+      // If clicked on not resolved -> changes to resolved
+      // Only enabled to Admin
+      let toggleBtn;
+      if (isResolved) {
+        toggleBtn = `
+          <button class="xp-btn xp-btn-sm xp-btn-resolved"
+                  ${isAdmin ? `onclick="CivicGridApp.toggleFaultTicket(${t.id})"` : 'disabled'}
+                  title="${isAdmin ? 'Click to change status to Not Resolved (Reopen ticket)' : 'Admin access required to change ticket resolution status'}">
+            ✓ Resolved
+          </button>
+        `;
+      } else {
+        toggleBtn = `
+          <button class="xp-btn xp-btn-sm xp-btn-not-resolved"
+                  ${isAdmin ? `onclick="CivicGridApp.toggleFaultTicket(${t.id})"` : 'disabled'}
+                  title="${isAdmin ? 'Click to change status to Resolved' : 'Admin access required to change ticket resolution status'}">
+            ⚠️ Not Resolved
+          </button>
+        `;
+      }
 
       const poleCode = t.streetLight ? t.streetLight.poleCode : `#${t.streetLightId || '?'}`;
       const createdAt = t.createdAt ? new Date(t.createdAt).toLocaleString() : 'N/A';
 
       return `
-        <tr style="${isResolved ? 'opacity: 0.75;' : 'font-weight: 500;'}">
+        <tr style="${isResolved ? 'opacity: 0.85;' : 'font-weight: 500;'}">
           <td><strong>${escapeHtml(t.ticketNumber || '#' + t.id)}</strong></td>
           <td><strong style="color: #003c74;">${escapeHtml(poleCode)}</strong></td>
           <td style="max-width: 320px;">${escapeHtml(t.description)}</td>
           <td>${createdAt}</td>
           <td>${statusBadge}</td>
-          <td>${resolveBtn}</td>
+          <td>${toggleBtn}</td>
         </tr>
       `;
     }).join('');
   }
 
-  async function resolveFault(ticketId) {
+  async function toggleFaultTicket(ticketId) {
+    if (currentUserRole !== 'ADMIN') {
+      alert('Access Denied: Only Admin can resolve or reopen fault tickets.');
+      return;
+    }
     try {
-      setStatus(`Resolving fault ticket #${ticketId}...`);
-      const res = await fetch(`/api/fault-tickets/${ticketId}/resolve`, {
-        method: 'PUT'
+      setStatus(`Updating fault ticket #${ticketId}...`);
+      const res = await fetch(`/api/fault-tickets/${ticketId}/toggle`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-User-Role': currentUserRole
+        }
       });
-      if (!res.ok) throw new Error('HTTP ' + res.status);
-
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || `HTTP ${res.status}`);
+      }
+      const updated = await res.json();
+      const statusText = updated.status === 'RESOLVED' ? 'RESOLVED' : 'NOT RESOLVED (OPEN)';
+      setStatus(`Fault ticket #${ticketId} changed to ${statusText}.`);
       await fetchFaultTickets();
       await fetchStreetLights();
       await fetchPowerSummary();
-      setStatus(`Fault ticket #${ticketId} resolved. Street light restored to ACTIVE.`);
     } catch (err) {
-      alert('Error resolving fault ticket: ' + err.message);
+      alert('Error updating fault ticket: ' + err.message);
+      setStatus('Failed to update fault ticket.');
     }
+  }
+
+  function resolveFault(ticketId) {
+    return toggleFaultTicket(ticketId);
   }
 
   // =========================================================================
@@ -982,6 +1178,11 @@ const CivicGridApp = (function () {
     openNewTransactionModal,
     handleTransactionSubmit,
     resolveFault,
+    toggleFaultTicket,
+    switchUserRole,
+    openLoginModal,
+    selectLoginCard,
+    confirmUserLogin,
     closeModal,
     openAboutDialog,
     setCurrency,

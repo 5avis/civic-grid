@@ -22,7 +22,16 @@ public class StreetLightController {
      * POST /api/street-lights
      */
     @PostMapping
-    public ResponseEntity<StreetLight> registerLight(@Valid @RequestBody RegisterLightRequest request) {
+    public ResponseEntity<?> registerLight(
+            @Valid @RequestBody RegisterLightRequest request,
+            @RequestHeader(value = "X-User-Role", required = false) String roleHeader,
+            @RequestParam(value = "role", required = false) String roleParam
+    ) {
+        String role = roleHeader != null ? roleHeader : roleParam;
+        if (role != null && !"ADMIN".equalsIgnoreCase(role)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(java.util.Map.of("error", "Access denied: Only Admin can register new street lights."));
+        }
         StreetLight registered = streetLightService.registerLight(
                 request.getPoleCode(),
                 request.getZoneId(),
@@ -36,10 +45,17 @@ public class StreetLightController {
      * PUT /api/street-lights/{id}/dimming
      */
     @PutMapping("/{id}/dimming")
-    public ResponseEntity<StreetLight> setDimming(
+    public ResponseEntity<?> setDimming(
             @PathVariable Long id,
-            @Valid @RequestBody SetDimmingRequest request
+            @Valid @RequestBody SetDimmingRequest request,
+            @RequestHeader(value = "X-User-Role", required = false) String roleHeader,
+            @RequestParam(value = "role", required = false) String roleParam
     ) {
+        String role = roleHeader != null ? roleHeader : roleParam;
+        if (role != null && !"ADMIN".equalsIgnoreCase(role)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(java.util.Map.of("error", "Access denied: Only Admin can set street light brightness."));
+        }
         StreetLight updated = streetLightService.setDimming(id, request.getDimmingPercentage());
         return ResponseEntity.ok(updated);
     }

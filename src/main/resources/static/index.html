@@ -99,6 +99,24 @@
         </div>
       </div>
 
+      <!-- User Menu -->
+      <div class="xp-menu-item">
+        <span>User</span>
+        <div class="xp-dropdown-menu">
+          <div class="xp-dropdown-entry" onclick="CivicGridApp.openLoginModal()">
+            <span>Switch User / Log On...</span>
+            <span style="color: #666; font-size: 10px;">Ctrl+L</span>
+          </div>
+          <div class="xp-dropdown-divider"></div>
+          <div class="xp-dropdown-entry" onclick="CivicGridApp.switchUserRole('ADMIN')">
+            <span>Log In as Admin (Grid Ops)</span>
+          </div>
+          <div class="xp-dropdown-entry" onclick="CivicGridApp.switchUserRole('ACCOUNTANT')">
+            <span>Log In as Accountant (Finance)</span>
+          </div>
+        </div>
+      </div>
+
       <!-- Help Menu -->
       <div class="xp-menu-item">
         <span>Help</span>
@@ -112,12 +130,12 @@
 
     <!-- 3. Toolbar -->
     <section class="xp-toolbar">
-      <button class="xp-tb-btn" onclick="CivicGridApp.openRegisterLightModal()" title="Register New Street Light">
+      <button class="xp-tb-btn" id="tb-btn-new-light" onclick="CivicGridApp.openRegisterLightModal()" title="Register New Street Light">
         <span style="font-weight: bold; color: #1b5e20; margin-right: 4px;">+</span>
         <span>New Light</span>
       </button>
 
-      <button class="xp-tb-btn" onclick="CivicGridApp.openNewTransactionModal()" title="Record Vendor Bill, Invoice, or Payment">
+      <button class="xp-tb-btn" id="tb-btn-new-tx" onclick="CivicGridApp.openNewTransactionModal()" title="Record Vendor Bill, Invoice, or Payment">
         <span style="font-weight: bold; color: #003c74; margin-right: 4px;">+</span>
         <span>New Transaction</span>
       </button>
@@ -130,15 +148,28 @@
 
       <div class="xp-tb-sep"></div>
 
-      <!-- Currency Selector -->
-      <div style="margin-left: auto; display: flex; align-items: center; gap: 6px; padding-right: 4px;">
-        <label for="currency-selector" style="font-size: 11px; font-weight: bold; color: #333;">Currency:</label>
-        <select id="currency-selector" class="xp-select" style="padding: 1px 6px; height: 23px; font-weight: bold; font-family: var(--xp-font); font-size: 11px; cursor: pointer; background: #fff;" onchange="CivicGridApp.setCurrency(this.value)">
-          <option value="INR" selected>&#8377; Rupee (INR)</option>
-          <option value="USD">$ Dollar (USD)</option>
-          <option value="EUR">&#8364; Euro (EUR)</option>
-          <option value="GBP">&#163; Pound (GBP)</option>
-        </select>
+      <!-- User Role Selector & Currency -->
+      <div style="margin-left: auto; display: flex; align-items: center; gap: 8px; padding-right: 4px;">
+        <!-- User Switcher Widget -->
+        <div style="display: flex; align-items: center; gap: 5px; background: #fff; border: 1px solid #7f9db9; padding: 1px 6px; border-radius: 2px;">
+          <span id="user-role-icon" style="font-size: 13px;">🛡️</span>
+          <label for="user-role-select" style="font-size: 11px; font-weight: bold; color: #333;">User:</label>
+          <select id="user-role-select" class="xp-select" style="padding: 1px 4px; height: 21px; font-weight: bold; font-family: var(--xp-font); font-size: 11px; cursor: pointer; background: #fff;" onchange="CivicGridApp.switchUserRole(this.value)">
+            <option value="ADMIN" selected>Admin (Administrator)</option>
+            <option value="ACCOUNTANT">Accountant (Finance)</option>
+          </select>
+          <button class="xp-btn xp-btn-sm" style="padding: 1px 6px; font-size: 10px;" onclick="CivicGridApp.openLoginModal()" title="Open Windows XP Log On dialog">Switch...</button>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <label for="currency-selector" style="font-size: 11px; font-weight: bold; color: #333;">Currency:</label>
+          <select id="currency-selector" class="xp-select" style="padding: 1px 6px; height: 23px; font-weight: bold; font-family: var(--xp-font); font-size: 11px; cursor: pointer; background: #fff;" onchange="CivicGridApp.setCurrency(this.value)">
+            <option value="INR" selected>&#8377; Rupee (INR)</option>
+            <option value="USD">$ Dollar (USD)</option>
+            <option value="EUR">&#8364; Euro (EUR)</option>
+            <option value="GBP">&#163; Pound (GBP)</option>
+          </select>
+        </div>
       </div>
     </section>
 
@@ -207,6 +238,9 @@
            TAB 1: Street Lights & Grid Controller
            =================================================================== -->
       <section class="tab-pane active" id="tab-lights">
+        <!-- Role Banner -->
+        <div id="role-banner-lights" class="xp-role-banner admin"></div>
+
         <!-- Controls Bar -->
         <div class="xp-pane-header">
           <div class="xp-controls-group">
@@ -220,7 +254,7 @@
           </div>
 
           <div class="xp-controls-group">
-            <button class="xp-btn" onclick="CivicGridApp.openRegisterLightModal()">
+            <button class="xp-btn" id="btn-register-light-pane" onclick="CivicGridApp.openRegisterLightModal()">
               <span>Register New Light...</span>
             </button>
             <button class="xp-btn" onclick="CivicGridApp.refreshAllData()">
@@ -254,6 +288,9 @@
            TAB 2: Automated Fault Tickets
            =================================================================== -->
       <section class="tab-pane" id="tab-faults">
+        <!-- Role Banner -->
+        <div id="role-banner-faults" class="xp-role-banner admin"></div>
+
         <div class="xp-pane-header">
           <div>
             <strong>Automated Night Failure Monitoring System</strong>
@@ -274,8 +311,8 @@
                 <th style="width: 140px;">Pole Code</th>
                 <th>Issue Description</th>
                 <th style="width: 160px;">Detected Date/Time</th>
-                <th style="width: 110px;">Status</th>
-                <th style="width: 120px;">Action</th>
+                <th style="width: 120px;">Status</th>
+                <th style="width: 140px;">Action (Toggle)</th>
               </tr>
             </thead>
             <tbody id="faults-tbody">
@@ -289,6 +326,9 @@
            TAB 3: ERP Accounting & Double-Entry Ledger
            =================================================================== -->
       <section class="tab-pane" id="tab-accounting">
+        <!-- Role Banner -->
+        <div id="role-banner-accounting" class="xp-role-banner admin"></div>
+
         <div class="xp-pane-header">
           <div class="xp-controls-group">
             <strong>Municipal General Ledger &amp; Journal Entries</strong>
@@ -296,7 +336,14 @@
           </div>
 
           <div class="xp-controls-group">
-            <button class="xp-btn" onclick="CivicGridApp.openNewTransactionModal()">
+            <button class="xp-btn" id="btn-new-tx-pane" onclick="CivicGridApp.openNewTransactionModal()">
+              <span>Record New Transaction...</span>
+            </button>
+            <button class="xp-btn" onclick="CivicGridApp.refreshAllData()">
+              <span>Refresh Ledger</span>
+            </button>
+          </div>
+        </div>
               <span>Record New Transaction...</span>
             </button>
             <button class="xp-btn" onclick="CivicGridApp.refreshAllData()">
@@ -531,22 +578,78 @@
 
     </main>
 
-    <!-- 7. Status Bar (Classic XP 4-Section Recessed Bar) -->
+    <!-- 7. Status Bar (Classic XP 5-Section Recessed Bar) -->
     <footer id="status-bar">
       <div class="status-panel status-panel-flex">
         <span id="status-text">Ready. Connected to CivicGrid Core.</span>
       </div>
-      <div class="status-panel" style="width: 170px;">
+      <div class="status-panel" id="status-user-panel" style="width: 220px; font-weight: bold; cursor: pointer; user-select: none;" onclick="CivicGridApp.openLoginModal()" title="Click to Switch User Role">
+        <span id="status-user-badge">🛡️ User: Admin (Full Access)</span>
+      </div>
+      <div class="status-panel" style="width: 160px;">
         <span>DB: MariaDB (civic_grid)</span>
       </div>
-      <div class="status-panel" style="width: 130px;">
+      <div class="status-panel" style="width: 120px;">
         <span>Sim: Active (5s)</span>
       </div>
-      <div class="status-panel" style="width: 110px; font-family: monospace; font-weight: bold; justify-content: center;">
+      <div class="status-panel" style="width: 100px; font-family: monospace; font-weight: bold; justify-content: center;">
         <span id="status-clock">12:00:00 PM</span>
       </div>
     </footer>
 
+  </div>
+
+  <!-- =========================================================================
+       MODAL 0: Windows XP Log On / Switch User Dialog
+       ========================================================================= -->
+  <div class="xp-modal-overlay" id="modal-login">
+    <div class="xp-dialog-box" style="width: 490px;">
+      <div class="xp-title-bar">
+        <div class="xp-title-content">
+          <span>Log On to CivicGrid System</span>
+        </div>
+        <button class="xp-win-btn btn-close" onclick="CivicGridApp.closeModal('modal-login')">X</button>
+      </div>
+
+      <div class="xp-dialog-body" style="padding: 16px;">
+        <p style="font-size: 11px; color: #333; margin-bottom: 12px; font-weight: 500;">
+          Select a user account to switch roles and active permissions:
+        </p>
+
+        <!-- Account 1: Administrator -->
+        <div class="xp-login-user-card selected" id="card-user-admin" onclick="CivicGridApp.selectLoginCard('ADMIN')">
+          <div class="xp-login-avatar">🛡️</div>
+          <div style="flex: 1;">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <strong style="font-size: 12px; color: #003c74;">Administrator (Admin)</strong>
+              <span class="xp-badge xp-badge-active" style="font-size: 9px;">GRID OPS</span>
+            </div>
+            <div style="font-size: 11px; color: #555; margin-top: 3px; line-height: 1.35;">
+              Full grid hardware authority: Register lights, dimming control (0-100%), power telemetry, and toggle fault tickets (Resolved &harr; Not Resolved).
+            </div>
+          </div>
+        </div>
+
+        <!-- Account 2: Accountant -->
+        <div class="xp-login-user-card" id="card-user-accountant" onclick="CivicGridApp.selectLoginCard('ACCOUNTANT')">
+          <div class="xp-login-avatar">💼</div>
+          <div style="flex: 1;">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <strong style="font-size: 12px; color: #003c74;">Accountant (Finance)</strong>
+              <span class="xp-badge" style="background: #fef3c7; color: #92400e; border: 1px solid #fde68a; font-size: 9px;">FINANCE</span>
+            </div>
+            <div style="font-size: 11px; color: #555; margin-top: 3px; line-height: 1.35;">
+              Full ERP financial authority: Record transactions (Vendor bills, invoices, payments), post to ledger, balance sheet &amp; budget audits. Read-only on grid equipment.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="xp-dialog-footer">
+        <button type="button" class="xp-btn xp-btn-default" onclick="CivicGridApp.confirmUserLogin()">Log On</button>
+        <button type="button" class="xp-btn" onclick="CivicGridApp.closeModal('modal-login')">Cancel</button>
+      </div>
+    </div>
   </div>
 
   <!-- =========================================================================
