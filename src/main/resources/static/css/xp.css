@@ -341,7 +341,7 @@ html, body {
 .xp-tab {
   padding: 6px 14px;
   background: linear-gradient(180deg, #f0ede0 0%, #ded9c4 100%);
-  border: none;
+  border: 1px solid transparent;
   outline: none;
   border-top-left-radius: 4px;
   border-top-right-radius: 4px;
@@ -358,9 +358,13 @@ html, body {
   color: #000;
 }
 
+.xp-tab:focus, .xp-tab:focus-visible {
+  outline: none;
+}
+
 .xp-tab.active {
   background: #ffffff;
-  border: none;
+  border: 1px solid #cccccc;
   outline: none;
   color: #000000;
   font-weight: 700;
