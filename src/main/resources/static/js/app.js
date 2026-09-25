@@ -118,6 +118,8 @@ const CivicGridApp = (function () {
   // User Role Management: ADMIN vs ACCOUNTANT
   // =========================================================================
 
+  let isLoggedIn = sessionStorage.getItem('civicgrid_logged_in') === 'true';
+
   function initUserRole() {
     applyUserRole(currentUserRole);
   }
@@ -132,16 +134,12 @@ const CivicGridApp = (function () {
     const userSelect = document.getElementById('user-role-select');
     if (userSelect) userSelect.value = role;
 
-    // Update Toolbar Icon
-    const userIcon = document.getElementById('user-role-icon');
-    if (userIcon) userIcon.textContent = role === 'ADMIN' ? '🛡️' : '💼';
-
-    // Update Status Bar User Panel
+    // Update Status Bar User Panel (No emoji!)
     const statusBadge = document.getElementById('status-user-badge');
     if (statusBadge) {
       statusBadge.textContent = role === 'ADMIN'
-        ? '🛡️ User: Admin (Full Access)'
-        : '💼 User: Accountant (Finance Only)';
+        ? 'User: Admin (Full Access)'
+        : 'User: Accountant (Finance Only)';
     }
 
     // Toolbar buttons: "+ New Light" enabled for Admin only
@@ -162,31 +160,6 @@ const CivicGridApp = (function () {
         : 'Admin privileges required to register street lights';
     }
 
-    // Role Banners across workspaces
-    const bannerLights = document.getElementById('role-banner-lights');
-    if (bannerLights) {
-      bannerLights.className = `xp-role-banner ${role.toLowerCase()}`;
-      bannerLights.innerHTML = role === 'ADMIN'
-        ? `<span><strong>⚡ Administrator Mode:</strong> Full control enabled &mdash; you can register lights, adjust dimming levels (0&ndash;100%), and monitor circuit load.</span>`
-        : `<span><strong>🔒 Accountant View:</strong> Grid hardware and dimming adjustments are read-only. Switch to Admin role to control equipment.</span>`;
-    }
-
-    const bannerFaults = document.getElementById('role-banner-faults');
-    if (bannerFaults) {
-      bannerFaults.className = `xp-role-banner ${role.toLowerCase()}`;
-      bannerFaults.innerHTML = role === 'ADMIN'
-        ? `<span><strong>⚡ Administrator Mode:</strong> You have full authority to toggle tickets between <em>Resolved</em> and <em>Not Resolved</em> to manage field repairs.</span>`
-        : `<span><strong>🔒 Accountant View:</strong> Fault tickets are read-only. Only Administrators can resolve or reopen field faults.</span>`;
-    }
-
-    const bannerAcct = document.getElementById('role-banner-accounting');
-    if (bannerAcct) {
-      bannerAcct.className = `xp-role-banner ${role.toLowerCase()}`;
-      bannerAcct.innerHTML = role === 'ACCOUNTANT'
-        ? `<span><strong>💼 Accountant Mode Active:</strong> Full ERP financial authority &mdash; record double-entry transactions, post invoices &amp; bills, audit ledger.</span>`
-        : `<span><strong>ℹ️ Administrator View:</strong> Financial ledger &amp; double-entry journal auditing mode.</span>`;
-    }
-
     // Re-render table views if caches exist
     if (lightsCache && lightsCache.length) renderStreetLights(lightsCache);
     if (faultsCache && faultsCache.length) renderFaultTickets(faultsCache);
@@ -198,14 +171,37 @@ const CivicGridApp = (function () {
     setStatus(`Switched active user to ${role === 'ADMIN' ? 'Administrator' : 'Accountant'}.`);
   }
 
-  function openLoginModal() {
+  function openLoginModal(isMandatory = false) {
     pendingLoginRole = currentUserRole;
-    updateLoginModalCards();
+    selectLoginCard(pendingLoginRole);
+    const pwdInput = document.getElementById('login-password');
+    if (pwdInput) pwdInput.value = '';
+    const errorDiv = document.getElementById('login-error-msg');
+    if (errorDiv) errorDiv.style.display = 'none';
+
+    const cancelBtn = document.getElementById('btn-cancel-login');
+    if (cancelBtn) {
+      cancelBtn.style.display = (isMandatory || !isLoggedIn) ? 'none' : 'inline-block';
+    }
+
     document.getElementById('modal-login')?.classList.add('open');
+    setTimeout(() => pwdInput?.focus(), 100);
+  }
+
+  function cancelLogin() {
+    if (!isLoggedIn) {
+      alert('Please enter the password to log on to CivicGrid.');
+      return;
+    }
+    closeModal('modal-login');
   }
 
   function selectLoginCard(role) {
     pendingLoginRole = role;
+    const adminRadio = document.getElementById('radio-user-admin');
+    const acctRadio = document.getElementById('radio-user-accountant');
+    if (adminRadio) adminRadio.checked = role === 'ADMIN';
+    if (acctRadio) acctRadio.checked = role === 'ACCOUNTANT';
     updateLoginModalCards();
   }
 
@@ -216,9 +212,37 @@ const CivicGridApp = (function () {
     if (accountantCard) accountantCard.classList.toggle('selected', pendingLoginRole === 'ACCOUNTANT');
   }
 
+  function handleLoginSubmit(e) {
+    if (e) e.preventDefault();
+    const pwdInput = document.getElementById('login-password');
+    const errorDiv = document.getElementById('login-error-msg');
+    const entered = (pwdInput?.value || '').trim();
+
+    // Shared password for both accounts: '1234' (also accept 'admin' or 'civicgrid')
+    if (entered === '1234' || entered.toLowerCase() === 'admin' || entered.toLowerCase() === 'civicgrid') {
+      isLoggedIn = true;
+      try {
+        sessionStorage.setItem('civicgrid_logged_in', 'true');
+      } catch (e) {}
+      if (errorDiv) errorDiv.style.display = 'none';
+
+      switchUserRole(pendingLoginRole);
+      closeModal('modal-login');
+      setStatus(`Logged on as ${pendingLoginRole === 'ADMIN' ? 'Administrator' : 'Accountant'}.`);
+    } else {
+      if (errorDiv) {
+        errorDiv.textContent = 'Invalid password. Shared password for both users is: 1234';
+        errorDiv.style.display = 'block';
+      }
+      if (pwdInput) {
+        pwdInput.select();
+        pwdInput.focus();
+      }
+    }
+  }
+
   function confirmUserLogin() {
-    switchUserRole(pendingLoginRole);
-    closeModal('modal-login');
+    handleLoginSubmit(null);
   }
 
   // Initialize Application
@@ -230,9 +254,14 @@ const CivicGridApp = (function () {
     loadAllMasterData();
     refreshAllData();
 
+    // Open login box above the page with background not visible if not logged in
+    if (!isLoggedIn) {
+      openLoginModal(true);
+    }
+
     // Start 5-second live telemetry refresh to sync with @Scheduled backend simulator
     autoRefreshTimer = setInterval(() => {
-      if (isAutoRefreshEnabled) {
+      if (isAutoRefreshEnabled && isLoggedIn) {
         fetchPowerSummary();
         if (activeTab === 'lights') fetchStreetLights();
         if (activeTab === 'faults') fetchFaultTickets();
@@ -1183,6 +1212,8 @@ const CivicGridApp = (function () {
     openLoginModal,
     selectLoginCard,
     confirmUserLogin,
+    handleLoginSubmit,
+    cancelLogin,
     closeModal,
     openAboutDialog,
     setCurrency,
