@@ -157,7 +157,7 @@ html, body {
 .xp-menu-bar {
   height: 24px;
   background: var(--xp-bg);
-  border-bottom: 1px solid var(--xp-bevel-dark);
+  border-bottom: none;
   display: flex;
   align-items: center;
   padding: 0 6px;
@@ -225,8 +225,8 @@ html, body {
 .xp-toolbar {
   height: 34px;
   background: linear-gradient(180deg, #f7f6f0 0%, #ece9d8 50%, #d8d4bf 100%);
-  border-bottom: 1px solid var(--xp-bevel-dark);
-  box-shadow: inset 0 1px 0 #fff;
+  border-bottom: none;
+  box-shadow: none;
   display: flex;
   align-items: center;
   padding: 0 8px;
@@ -266,8 +266,8 @@ html, body {
 .xp-tb-sep {
   width: 1px;
   height: 20px;
-  background: var(--xp-bevel-dark);
-  border-right: 1px solid #fff;
+  background: #d4cfb8;
+  border-right: none;
   margin: 0 4px;
 }
 
@@ -276,8 +276,9 @@ html, body {
    ========================================================================== */
 
 .xp-kpi-bar {
-  background: #f0ede0;
-  border-bottom: 1px solid var(--xp-bevel-dark);
+  background: #ffffff;
+  border-top: none;
+  border-bottom: none;
   padding: 5px 10px;
   display: flex;
   gap: 8px;
@@ -325,9 +326,10 @@ html, body {
   display: flex;
   align-items: flex-end;
   padding: 8px 10px 0 10px;
-  background: var(--xp-bg);
+  background: #ffffff;
   gap: 3px;
   flex-shrink: 0;
+  border-top: none;
   border-bottom: 2px solid #526f45;
   user-select: none;
 }
