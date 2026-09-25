@@ -122,3 +122,84 @@ After each stage:
 - Wait for my confirmation before moving to the next stage.
 
 Confirm you understand this full scope, then tell me what you need from me to begin Stage 1.
+
+
+
+
+//frontend
+
+PROJECT: CivicGrid Frontend — Windows XP-Style Desktop UI
+
+ROLE: You are my AI coding assistant (Antigravity CLI) inside my existing IntelliJ Spring Boot project (CivicGrid). Backend is fully built and working. Now build the FRONTEND only, styled as a retro Windows XP desktop.
+
+====================================================
+0. TECH CONSTRAINT
+====================================================
+Plain HTML, CSS, and vanilla JavaScript only — NO React, NO frameworks, NO build tools. Place files in src/main/resources/static/ so Spring Boot serves them directly. Use fetch() to call my existing backend APIs.
+
+====================================================
+1. SCOPE — STAY ALIGNED WITH BACKEND (STRICT)
+====================================================
+Do NOT invent features, data, or screens that don't map to my actual backend entities/endpoints. Every UI element must correspond to something real in my database (contacts, products, zones, street_lights, journals, journal_entries, purchase_orders, vendor_bills, sales_orders, customer_invoices, payments, budgets, fault_tickets) or my existing 4 REST endpoints. If the UI needs a GET endpoint that doesn't exist yet, tell me first — don't fake data.
+
+====================================================
+2. VISUAL STYLE — WINDOWS XP "LUNA/OLIVE" DESKTOP (REFERENCE ATTACHED)
+====================================================
+Recreate the look and feel of classic Windows XP:
+- Desktop background: olive/sage green, with desktop icons (My Computer, Recycle Bin, etc. themed to our app instead — e.g. "Zones", "Reports", "Trash/Archived")
+- Draggable, resizable windows with classic XP title bars (gradient blue or olive-green bar), minimize/maximize/close buttons (top-right)
+- Each app section (Street Lights, Fault Tickets, Transactions, Reports, Budgets) opens as its own XP-style window
+- Menu bar inside each window: File, Edit, View, Tools (styled dropdown menus) — map real actions to these (e.g. File > New Light, Tools > Run Fault Check)
+- Classic XP dialog boxes for forms/alerts (e.g. "Register New Light" as a popup dialog with OK/Cancel buttons)
+- Right-click context menus on icons/list items (Open, Properties, Delete, Rename) mapped to real actions where relevant
+- Taskbar at bottom: Start button (bottom-left), running-window buttons, system tray with clock (bottom-right)
+- Start Menu: clicking Start opens a menu listing app sections (Street Lights, Accounting, Reports, Budgets) as "programs"
+- Use classic XP fonts (Tahoma), beveled/3D button edges, that slightly dated skeuomorphic look — NOT flat/modern design
+
+====================================================
+3. APP SECTIONS (as XP "windows"/"programs")
+====================================================
+
+**A. "My Zones & Lights" window (Admin)**
+- List view (like Windows Explorer file list) of zones → street lights inside each zone
+- Columns: Light ID, Zone, Dimming %, Current Power, Status
+- Right-click a light → context menu: "Set Dimming", "Properties", "Delete"
+- "New Light" dialog (like New Folder dialog) → calls POST /api/street-lights
+- Dimming dialog with a slider (0-100%) → calls PUT /api/street-lights/{id}/dimming
+
+**B. "Fault Tickets" window (Admin)**
+- List of auto-generated fault tickets (like an XP list view), status column (Open/Resolved)
+
+**C. "Accounting" window (Accountant)**
+- "New Transaction" dialog — type dropdown (Vendor Bill / Customer Invoice / Payment), amount, date, party, account → calls POST /api/transactions
+- Journal Entries list view — debit/credit columns
+
+**D. "Reports" window (Accountant)**
+- Tabs or menu to switch between Balance Sheet / P&L / Budget Variance — displayed as simple formatted tables inside the window, XP list-view style
+
+**E. "System Properties" style window**
+- Power summary (calls GET /api/street-lights/power-summary) shown like the "Windows: Details" dialog in the reference image — clean info panel with a big icon/logo and stats
+
+====================================================
+4. DATA NOTE
+====================================================
+If a section needs data my current APIs don't expose yet (listing zones, fault tickets, journal entries, invoices, reports), STOP and list exactly which new GET endpoints you need me to confirm/build on the backend first. Don't use permanent dummy data — mark any temporary mock data clearly as "TEMP — pending backend endpoint" in a code comment.
+
+====================================================
+5. HOW I WANT YOU TO WORK WITH ME
+====================================================
+Build in stages, do not combine:
+  Stage 1: Desktop shell — background, desktop icons, taskbar, Start menu, draggable/resizable window system (reusable window component in vanilla JS)
+  Stage 2: "My Zones & Lights" window — list view, New Light dialog, dimming dialog
+  Stage 3: "Fault Tickets" window
+  Stage 4: "Accounting" window — New Transaction dialog, Journal Entries list
+  Stage 5: "Reports" window
+  Stage 6: "System Properties" power summary window
+  Stage 7: Polish pass — right-click context menus, window animations (minimize/maximize), sound-free but visually authentic XP details
+
+After each stage:
+- Tell me what to do manually (e.g. "refresh browser at localhost:8080/desktop.html", "check this endpoint returns data")
+- Give a short, clear explanation of what was built and why
+- Wait for my confirmation before the next stage
+
+Confirm you understand, list any missing backend GET endpoints you'll need across all stages, then start with Stage 1.

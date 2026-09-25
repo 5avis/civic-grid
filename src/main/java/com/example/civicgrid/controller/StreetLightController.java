@@ -53,4 +53,13 @@ public class StreetLightController {
         StreetLightService.PowerSummaryDto summary = streetLightService.getPowerSummary();
         return ResponseEntity.ok(summary);
     }
+
+    /**
+     * Return all registered street lights for the desktop UI.
+     * GET /api/street-lights
+     */
+    @GetMapping
+    public ResponseEntity<java.util.List<StreetLight>> getAllLights() {
+        return ResponseEntity.ok(streetLightService.getAll());
+    }
 }

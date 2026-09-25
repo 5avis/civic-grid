@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CivicGrid — Municipal Smart Street Light Controller & ERP Accounting</title>
+  <!-- Windows XP Luna / Olive Theme Stylesheet -->
+  <link rel="stylesheet" href="css/xp.css">
+</head>
+<body>
+
+  <!-- Main Application Window (Full XP Chrome) -->
+  <div id="app-window">
+    
+    <!-- 1. Window Title Bar (Classic Olive / Luna Gradient) -->
+    <header class="xp-title-bar">
+      <div class="xp-title-content">
+        <div class="xp-title-icon">
+          <!-- CivicGrid Municipal Smart Street Light Icon -->
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <polygon points="12,11 20,11 23,22 9,22" fill="#fff7b2" opacity="0.4" />
+            <path d="M4 22H10" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+            <path d="M7 22V6C7 4.34315 8.34315 3 10 3H14C15.1046 3 16 3.89543 16 5V8" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+            <path d="M12 8H20L19 11H13L12 8Z" fill="#ffd700" stroke="#ffffff" stroke-width="1.2" stroke-linejoin="round"/>
+            <circle cx="16" cy="9.5" r="1.5" fill="#39e600"/>
+          </svg>
+        </div>
+        <span>CivicGrid — Municipal Smart Street Light Controller &amp; ERP Accounting [Version 1.0]</span>
+      </div>
+
+    </header>
+
+    <!-- 2. Menu Bar -->
+    <nav class="xp-menu-bar">
+      <!-- File Menu -->
+      <div class="xp-menu-item">
+        <span>File</span>
+        <div class="xp-dropdown-menu">
+          <div class="xp-dropdown-entry" onclick="CivicGridApp.openRegisterLightModal()">
+            <span>Register New Light...</span>
+            <span style="color: #666; font-size: 10px;">Ctrl+N</span>
+          </div>
+          <div class="xp-dropdown-entry" onclick="CivicGridApp.openNewTransactionModal()">
+            <span>Record Transaction...</span>
+            <span style="color: #666; font-size: 10px;">Ctrl+T</span>
+          </div>
+          <div class="xp-dropdown-divider"></div>
+          <div class="xp-dropdown-entry" onclick="CivicGridApp.refreshAllData()">
+            <span>Refresh Grid Data</span>
+            <span style="color: #666; font-size: 10px;">F5</span>
+          </div>
+          <div class="xp-dropdown-divider"></div>
+          <div class="xp-dropdown-entry" onclick="location.reload()">
+            <span>Exit / Reload</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- View Menu -->
+      <div class="xp-menu-item">
+        <span>View</span>
+        <div class="xp-dropdown-menu">
+          <div class="xp-dropdown-entry" onclick="CivicGridApp.switchTab('lights')">
+            <span>Street Lights &amp; Grid</span>
+          </div>
+          <div class="xp-dropdown-entry" onclick="CivicGridApp.switchTab('faults')">
+            <span>Automated Fault Tickets</span>
+          </div>
+          <div class="xp-dropdown-entry" onclick="CivicGridApp.switchTab('accounting')">
+            <span>ERP Accounting Ledger</span>
+          </div>
+          <div class="xp-dropdown-entry" onclick="CivicGridApp.switchTab('reports')">
+            <span>Financial Reports</span>
+          </div>
+          <div class="xp-dropdown-entry" onclick="CivicGridApp.switchTab('power')">
+            <span>Power Analytics</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tools Menu -->
+      <div class="xp-menu-item">
+        <span>Tools</span>
+        <div class="xp-dropdown-menu">
+          <div class="xp-dropdown-entry" onclick="CivicGridApp.refreshAllData()">
+            <span>Run Telemetry Sync</span>
+          </div>
+          <div class="xp-dropdown-entry" onclick="alert('Automatic telemetry polling is active every 5000ms.');">
+            <span>Power Simulation: 5s Interval</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Help Menu -->
+      <div class="xp-menu-item">
+        <span>Help</span>
+        <div class="xp-dropdown-menu">
+          <div class="xp-dropdown-entry" onclick="CivicGridApp.openAboutDialog()">
+            <span>About CivicGrid...</span>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <!-- 3. Toolbar -->
+    <section class="xp-toolbar">
+      <button class="xp-tb-btn" onclick="CivicGridApp.openRegisterLightModal()" title="Register New Street Light">
+        <span style="font-weight: bold; color: #1b5e20; margin-right: 4px;">+</span>
+        <span>New Light</span>
+      </button>
+
+      <button class="xp-tb-btn" onclick="CivicGridApp.openNewTransactionModal()" title="Record Vendor Bill, Invoice, or Payment">
+        <span style="font-weight: bold; color: #003c74; margin-right: 4px;">+</span>
+        <span>New Transaction</span>
+      </button>
+
+      <div class="xp-tb-sep"></div>
+
+      <button class="xp-tb-btn" onclick="CivicGridApp.refreshAllData()" title="Refresh All Data from MariaDB">
+        <span>Refresh All</span>
+      </button>
+    </section>
+
+    <!-- 4. Sunken KPI Summary Bar -->
+    <section class="xp-kpi-bar">
+      <div class="xp-kpi-panel">
+        <div class="xp-kpi-data">
+          <span class="xp-kpi-title">Street Lights</span>
+          <span class="xp-kpi-value" id="kpi-total-lights">--</span>
+        </div>
+      </div>
+
+      <div class="xp-kpi-panel">
+        <div class="xp-kpi-data">
+          <span class="xp-kpi-title">Faulty Lights</span>
+          <span class="xp-kpi-value" id="kpi-faulty-lights" style="color: #155724;">0</span>
+        </div>
+      </div>
+
+      <div class="xp-kpi-panel">
+        <div class="xp-kpi-data">
+          <span class="xp-kpi-title">Total Grid Load</span>
+          <span class="xp-kpi-value" id="kpi-total-power">-- W</span>
+        </div>
+      </div>
+
+      <div class="xp-kpi-panel">
+        <div class="xp-kpi-data">
+          <span class="xp-kpi-title">Average Draw</span>
+          <span class="xp-kpi-value" id="kpi-avg-power">-- W/pole</span>
+        </div>
+      </div>
+
+      <div class="xp-kpi-panel">
+        <div class="xp-kpi-data">
+          <span class="xp-kpi-title">Ledger Balance</span>
+          <span class="xp-kpi-value" id="kpi-ledger-status" style="font-size: 11px; color: #1b5e20;">Balanced</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. Classic XP Property Sheet Tabs -->
+    <div class="xp-tabs-container">
+      <div class="xp-tab active" data-tab="lights">
+        <span>Street Lights &amp; Grid</span>
+      </div>
+      <div class="xp-tab" data-tab="faults">
+        <span>Fault Tickets</span>
+        <span id="fault-badge-count" class="xp-badge-count" style="display: none;">0</span>
+      </div>
+      <div class="xp-tab" data-tab="accounting">
+        <span>ERP Accounting &amp; Ledger</span>
+      </div>
+      <div class="xp-tab" data-tab="reports">
+        <span>Financial Reports &amp; Budgets</span>
+      </div>
+      <div class="xp-tab" data-tab="power">
+        <span>System &amp; Power Analytics</span>
+      </div>
+    </div>
+
+    <!-- 6. Main Workspace -->
+    <main id="workspace">
+
+      <!-- ===================================================================
+           TAB 1: Street Lights & Grid Controller
+           =================================================================== -->
+      <section class="tab-pane active" id="tab-lights">
+        <!-- Controls Bar -->
+        <div class="xp-pane-header">
+          <div class="xp-controls-group">
+            <label for="zone-filter"><strong>Zone:</strong></label>
+            <select id="zone-filter" class="xp-select" style="min-width: 170px;">
+              <option value="ALL">All Grid Zones</option>
+            </select>
+
+            <label for="search-pole" style="margin-left: 10px;"><strong>Search:</strong></label>
+            <input type="text" id="search-pole" class="xp-input" placeholder="Search pole code..." style="width: 160px;">
+          </div>
+
+          <div class="xp-controls-group">
+            <button class="xp-btn xp-btn-default" onclick="CivicGridApp.openRegisterLightModal()">
+              <span>Register New Light...</span>
+            </button>
+            <button class="xp-btn" onclick="CivicGridApp.refreshAllData()">
+              <span>Refresh List</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Inset XP Table -->
+        <div class="xp-table-wrapper">
+          <table class="xp-list-view">
+            <thead>
+              <tr>
+                <th style="width: 50px;">ID</th>
+                <th style="width: 160px;">Pole Code</th>
+                <th style="width: 180px;">Grid Zone</th>
+                <th style="width: 140px;">Dimming %</th>
+                <th style="width: 130px;">Power Draw</th>
+                <th style="width: 100px;">Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="lights-tbody">
+              <tr><td colspan="7" style="text-align: center; padding: 20px; color: #666;">Loading street lights...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ===================================================================
+           TAB 2: Automated Fault Tickets
+           =================================================================== -->
+      <section class="tab-pane" id="tab-faults">
+        <div class="xp-pane-header">
+          <div>
+            <strong>Automated Night Failure Monitoring System</strong>
+            <div style="color: #666; font-size: 10px; margin-top: 2px;">
+              The @Scheduled power simulator scans every 5s. If a street light has dimming &gt; 0% but measured draw is 0.0W during night hours, an automated fault ticket is logged and light status is set to FAULTY.
+            </div>
+          </div>
+          <button class="xp-btn" onclick="CivicGridApp.refreshAllData()">
+            <span>Refresh Tickets</span>
+          </button>
+        </div>
+
+        <div class="xp-table-wrapper">
+          <table class="xp-list-view">
+            <thead>
+              <tr>
+                <th style="width: 140px;">Ticket #</th>
+                <th style="width: 140px;">Pole Code</th>
+                <th>Issue Description</th>
+                <th style="width: 160px;">Detected Date/Time</th>
+                <th style="width: 110px;">Status</th>
+                <th style="width: 120px;">Action</th>
+              </tr>
+            </thead>
+            <tbody id="faults-tbody">
+              <tr><td colspan="6" style="text-align: center; padding: 20px; color: #666;">Loading automated fault tickets...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ===================================================================
+           TAB 3: ERP Accounting & Double-Entry Ledger
+           =================================================================== -->
+      <section class="tab-pane" id="tab-accounting">
+        <div class="xp-pane-header">
+          <div class="xp-controls-group">
+            <strong>Municipal General Ledger &amp; Journal Entries</strong>
+            <span style="color: #666; margin-left: 12px; font-size: 10px;">Double-entry balanced accounting (Debits = Credits)</span>
+          </div>
+
+          <div class="xp-controls-group">
+            <button class="xp-btn xp-btn-default" onclick="CivicGridApp.openNewTransactionModal()">
+              <span>Record New Transaction...</span>
+            </button>
+            <button class="xp-btn" onclick="CivicGridApp.refreshAllData()">
+              <span>Refresh Ledger</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="xp-table-wrapper">
+          <table class="xp-list-view">
+            <thead>
+              <tr>
+                <th style="width: 140px;">Entry #</th>
+                <th style="width: 100px;">Date</th>
+                <th style="width: 90px;">Account</th>
+                <th style="width: 220px;">Account Name</th>
+                <th style="width: 110px; text-align: right;">Debit ($)</th>
+                <th style="width: 110px; text-align: right;">Credit ($)</th>
+                <th>Memo / Reference</th>
+              </tr>
+            </thead>
+            <tbody id="journal-tbody">
+              <tr><td colspan="7" style="text-align: center; padding: 20px; color: #666;">Loading journal entries...</td></tr>
+            </tbody>
+            <tfoot id="journal-tfoot"></tfoot>
+          </table>
+        </div>
+      </section>
+
+      <!-- ===================================================================
+           TAB 4: Financial Reports & Budgets
+           =================================================================== -->
+      <section class="tab-pane" id="tab-reports">
+        <!-- Sub-Tabs -->
+        <div class="xp-subtabs">
+          <button class="xp-subtab-btn active" data-subtab="balance-sheet">Balance Sheet</button>
+          <button class="xp-subtab-btn" data-subtab="pnl">Profit &amp; Loss</button>
+          <button class="xp-subtab-btn" data-subtab="budget">Zone Budget Variance</button>
+        </div>
+
+        <!-- 1. Balance Sheet Subtab -->
+        <div class="subtab-pane" id="subtab-balance-sheet">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <div id="bs-balance-check">Loading statement...</div>
+            <button class="xp-btn xp-btn-sm" onclick="CivicGridApp.refreshAllData()">Refresh</button>
+          </div>
+
+          <div style="display: flex; gap: 12px; height: calc(100% - 35px);">
+            <!-- Assets Table -->
+            <div class="xp-table-wrapper" style="flex: 1;">
+              <table class="xp-list-view">
+                <thead>
+                  <tr>
+                    <th colspan="3" style="background: #e2ecd9; color: #1e3a13;">ASSETS (Infrastructure, Bank, Receivables)</th>
+                  </tr>
+                  <tr>
+                    <th style="width: 70px;">Code</th>
+                    <th>Account</th>
+                    <th style="width: 100px; text-align: right;">Balance ($)</th>
+                  </tr>
+                </thead>
+                <tbody id="bs-assets-tbody"></tbody>
+              </table>
+            </div>
+
+            <!-- Liabilities & Equity Table -->
+            <div class="xp-table-wrapper" style="flex: 1;">
+              <table class="xp-list-view">
+                <thead>
+                  <tr>
+                    <th colspan="3" style="background: #fbeee8; color: #5a1a11;">LIABILITIES &amp; EQUITY (Payables &amp; Retained Earnings)</th>
+                  </tr>
+                  <tr>
+                    <th style="width: 70px;">Code</th>
+                    <th>Account</th>
+                    <th style="width: 100px; text-align: right;">Balance ($)</th>
+                  </tr>
+                </thead>
+                <tbody id="bs-liab-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. Profit & Loss Subtab -->
+        <div class="subtab-pane" id="subtab-pnl" style="display: none;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <div id="pnl-net-result">Loading statement...</div>
+            <button class="xp-btn xp-btn-sm" onclick="CivicGridApp.refreshAllData()">Refresh</button>
+          </div>
+
+          <div style="display: flex; gap: 12px; height: calc(100% - 35px);">
+            <!-- Income Table -->
+            <div class="xp-table-wrapper" style="flex: 1;">
+              <table class="xp-list-view">
+                <thead>
+                  <tr>
+                    <th colspan="3" style="background: #e2ecd9; color: #1e3a13;">OPERATING REVENUE &amp; FEES</th>
+                  </tr>
+                  <tr>
+                    <th style="width: 70px;">Code</th>
+                    <th>Account</th>
+                    <th style="width: 100px; text-align: right;">Total ($)</th>
+                  </tr>
+                </thead>
+                <tbody id="pnl-income-tbody"></tbody>
+              </table>
+            </div>
+
+            <!-- Expenses Table -->
+            <div class="xp-table-wrapper" style="flex: 1;">
+              <table class="xp-list-view">
+                <thead>
+                  <tr>
+                    <th colspan="3" style="background: #fbeee8; color: #5a1a11;">OPERATING EXPENSES (Electricity, Repairs)</th>
+                  </tr>
+                  <tr>
+                    <th style="width: 70px;">Code</th>
+                    <th>Account</th>
+                    <th style="width: 100px; text-align: right;">Total ($)</th>
+                  </tr>
+                </thead>
+                <tbody id="pnl-expense-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. Zone Budget Variance Subtab -->
+        <div class="subtab-pane" id="subtab-budget" style="display: none;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <div><strong>Zone Electricity Expenditure vs. Allocated Annual Budget</strong></div>
+            <button class="xp-btn xp-btn-sm" onclick="CivicGridApp.refreshAllData()">Refresh</button>
+          </div>
+
+          <div class="xp-table-wrapper">
+            <table class="xp-list-view">
+              <thead>
+                <tr>
+                  <th>Zone Name</th>
+                  <th style="width: 80px;">Fiscal Year</th>
+                  <th style="width: 130px; text-align: right;">Allocated Budget</th>
+                  <th style="width: 130px; text-align: right;">Actual Spend</th>
+                  <th style="width: 130px; text-align: right;">Variance ($)</th>
+                  <th style="width: 160px;">Budget Utilization</th>
+                </tr>
+              </thead>
+              <tbody id="budget-tbody">
+                <tr><td colspan="6" style="text-align: center; padding: 20px; color: #666;">Loading budget reports...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================================================================
+           TAB 5: System & Power Analytics
+           =================================================================== -->
+      <section class="tab-pane" id="tab-power">
+        <div style="display: flex; gap: 16px; height: 100%;">
+          <!-- Left: XP System Details Dialog Style Panel -->
+          <div style="flex: 1; border: 2px inset #aca899; padding: 16px; background: #faf9f6; overflow: auto;">
+            <div style="display: flex; align-items: center; gap: 16px; padding-bottom: 14px; border-bottom: 1px solid #ccc; margin-bottom: 14px;">
+              <div style="width: 36px; height: 36px; border: 1px solid #526f45; background: #d8e4d3; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 16px; color: #172414;">PWR</div>
+              <div>
+                <h2 style="font-size: 15px; color: #172414;">CivicGrid Municipal Power Telemetry Engine</h2>
+                <div style="color: #666; font-size: 11px;">Spring Boot 4.1.1 Scheduled Telemetry Simulation</div>
+              </div>
+            </div>
+
+            <fieldset style="border: 1px solid #aca899; padding: 12px; margin-bottom: 14px;">
+              <legend><strong>Real-time Telemetry Metrics</strong></legend>
+              <table style="width: 100%; font-size: 11px; line-height: 2;">
+                <tr>
+                  <td style="width: 45%; color: #666;">Simulation Cycle:</td>
+                  <td><strong>Every 5,000 ms (@Scheduled)</strong></td>
+                </tr>
+                <tr>
+                  <td style="color: #666;">Current Operational Mode:</td>
+                  <td><span class="xp-badge xp-badge-active">NIGHT HOURS (Active Power Draw)</span></td>
+                </tr>
+                <tr>
+                  <td style="color: #666;">Fault Detection Rule:</td>
+                  <td>Dimming &gt; 0% with 0.0W Power Draw triggers automated ticket</td>
+                </tr>
+                <tr>
+                  <td style="color: #666;">Target Database:</td>
+                  <td>MariaDB 13.0 (<code>civic_grid</code> on localhost:3306)</td>
+                </tr>
+                <tr>
+                  <td style="color: #666;">Backend REST API:</td>
+                  <td><code>http://localhost:8080/api/street-lights/power-summary</code></td>
+                </tr>
+              </table>
+            </fieldset>
+
+            <fieldset style="border: 1px solid #aca899; padding: 12px;">
+              <legend><strong>Municipal Database Tables Verified</strong></legend>
+              <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; font-family: monospace; font-size: 11px;">
+                <div>[OK] street_lights</div>
+                <div>[OK] zones</div>
+                <div>[OK] fault_tickets</div>
+                <div>[OK] budgets</div>
+                <div>[OK] journal_entries</div>
+                <div>[OK] chart_of_accounts</div>
+                <div>[OK] contacts</div>
+                <div>[OK] products</div>
+                <div>[OK] vendor_bills</div>
+                <div>[OK] customer_invoices</div>
+              </div>
+            </fieldset>
+          </div>
+
+          <!-- Right: Action Panel -->
+          <div style="width: 300px; border: 2px inset #aca899; padding: 14px; background: #faf9f6; display: flex; flex-direction: column; gap: 12px;">
+            <strong>System Actions</strong>
+            <p style="font-size: 10.5px; color: #555;">
+              Use the controls below to trigger immediate updates from the Spring Boot simulation layer:
+            </p>
+            <button class="xp-btn xp-btn-default" onclick="CivicGridApp.refreshAllData()" style="padding: 6px;">
+              Synchronize Telemetry Now
+            </button>
+            <button class="xp-btn" onclick="CivicGridApp.switchTab('faults')" style="padding: 6px;">
+              Inspect Fault Tickets
+            </button>
+            <button class="xp-btn" onclick="CivicGridApp.openAboutDialog()" style="padding: 6px;">
+              About CivicGrid...
+            </button>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- 7. Status Bar (Classic XP 4-Section Recessed Bar) -->
+    <footer id="status-bar">
+      <div class="status-panel status-panel-flex">
+        <span id="status-text">Ready. Connected to CivicGrid Core.</span>
+      </div>
+      <div class="status-panel" style="width: 170px;">
+        <span>DB: MariaDB (civic_grid)</span>
+      </div>
+      <div class="status-panel" style="width: 130px;">
+        <span>Sim: Active (5s)</span>
+      </div>
+      <div class="status-panel" style="width: 110px; font-family: monospace; font-weight: bold; justify-content: center;">
+        <span id="status-clock">12:00:00 PM</span>
+      </div>
+    </footer>
+
+  </div>
+
+  <!-- =========================================================================
+       MODAL 1: Register New Street Light Dialog
+       ========================================================================= -->
+  <div class="xp-modal-overlay" id="modal-register-light">
+    <div class="xp-dialog-box" style="width: 380px;">
+      <div class="xp-title-bar">
+        <div class="xp-title-content">
+          <span>Register New Street Light</span>
+        </div>
+        <button class="xp-win-btn btn-close" onclick="CivicGridApp.closeModal('modal-register-light')">X</button>
+      </div>
+
+      <form id="new-light-form" onsubmit="CivicGridApp.handleRegisterLightSubmit(event)">
+        <div class="xp-dialog-body">
+          <div class="xp-form-row">
+            <label for="new-light-pole">Pole Code / Hardware Identifier:</label>
+            <input type="text" id="new-light-pole" class="xp-input" placeholder="e.g. POLE-COMM-02" required>
+          </div>
+
+          <div class="xp-form-row">
+            <label for="new-light-zone">Assigned Grid Zone:</label>
+            <select id="new-light-zone" class="xp-select" required></select>
+          </div>
+
+          <div class="xp-form-row">
+            <label for="new-light-dimming">Initial Brightness / Dimming Level: <strong id="new-light-dim-val">80%</strong></label>
+            <input type="range" id="new-light-dimming" min="0" max="100" value="80" style="width: 100%;">
+          </div>
+        </div>
+
+        <div class="xp-dialog-footer">
+          <button type="submit" class="xp-btn xp-btn-default">OK</button>
+          <button type="button" class="xp-btn" onclick="CivicGridApp.closeModal('modal-register-light')">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       MODAL 2: Adjust Dimming Dialog
+       ========================================================================= -->
+  <div class="xp-modal-overlay" id="modal-dimming">
+    <div class="xp-dialog-box" style="width: 360px;">
+      <div class="xp-title-bar">
+        <div class="xp-title-content">
+          <span>Set Street Light Brightness</span>
+        </div>
+        <button class="xp-win-btn btn-close" onclick="CivicGridApp.closeModal('modal-dimming')">X</button>
+      </div>
+
+      <form onsubmit="CivicGridApp.handleDimmingSubmit(event)">
+        <div class="xp-dialog-body">
+          <p style="margin-bottom: 12px; font-size: 11px;">
+            Target Pole: <strong id="dimming-pole-label" style="color: #003c74;">POLE-01</strong>
+          </p>
+
+          <div class="xp-form-row">
+            <label for="dimming-slider">Brightness Level: <strong id="dimming-slider-val" style="color: #172414; font-size: 13px;">80%</strong></label>
+            <input type="range" id="dimming-slider" min="0" max="100" value="80" style="width: 100%; margin: 8px 0;">
+          </div>
+
+          <div style="display: flex; gap: 4px; justify-content: center; margin-top: 6px;">
+            <button type="button" class="xp-btn xp-btn-sm" onclick="document.getElementById('dimming-slider').value=0; document.getElementById('dimming-slider-val').textContent='0%';">0% (Off)</button>
+            <button type="button" class="xp-btn xp-btn-sm" onclick="document.getElementById('dimming-slider').value=50; document.getElementById('dimming-slider-val').textContent='50%';">50%</button>
+            <button type="button" class="xp-btn xp-btn-sm" onclick="document.getElementById('dimming-slider').value=80; document.getElementById('dimming-slider-val').textContent='80%';">80%</button>
+            <button type="button" class="xp-btn xp-btn-sm" onclick="document.getElementById('dimming-slider').value=100; document.getElementById('dimming-slider-val').textContent='100%';">100%</button>
+          </div>
+        </div>
+
+        <div class="xp-dialog-footer">
+          <button type="submit" class="xp-btn xp-btn-default">Apply</button>
+          <button type="button" class="xp-btn" onclick="CivicGridApp.closeModal('modal-dimming')">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       MODAL 3: Record Accounting Transaction Dialog
+       ========================================================================= -->
+  <div class="xp-modal-overlay" id="modal-transaction">
+    <div class="xp-dialog-box" style="width: 440px;">
+      <div class="xp-title-bar">
+        <div class="xp-title-content">
+          <span>Record New Accounting Transaction</span>
+        </div>
+        <button class="xp-win-btn btn-close" onclick="CivicGridApp.closeModal('modal-transaction')">X</button>
+      </div>
+
+      <form id="tx-form" onsubmit="CivicGridApp.handleTransactionSubmit(event)">
+        <div class="xp-dialog-body">
+          <div class="xp-form-row">
+            <label for="tx-type">Transaction Type:</label>
+            <select id="tx-type" class="xp-select" required>
+              <option value="VENDOR_BILL">Vendor Bill (Procure Electricity / Services)</option>
+              <option value="CUSTOMER_INVOICE">Customer Invoice (Bill Municipality for Operations)</option>
+              <option value="PAYMENT">Payment (Settle Vendor Bill or Receive Cash)</option>
+            </select>
+          </div>
+
+          <div style="display: flex; gap: 10px;">
+            <div class="xp-form-row" style="flex: 1;">
+              <label for="tx-amount">Amount ($):</label>
+              <input type="number" id="tx-amount" class="xp-input" step="0.01" min="0.01" placeholder="e.g. 450.00" required>
+            </div>
+
+            <div class="xp-form-row" style="flex: 1;">
+              <label for="tx-date">Date:</label>
+              <input type="date" id="tx-date" class="xp-input" required>
+            </div>
+          </div>
+
+          <div class="xp-form-row">
+            <label for="tx-party">Contact / Entity:</label>
+            <select id="tx-party" class="xp-select"></select>
+          </div>
+
+          <div class="xp-form-row">
+            <label for="tx-account">Target Chart of Account:</label>
+            <select id="tx-account" class="xp-select" required></select>
+          </div>
+
+          <div class="xp-form-row">
+            <label for="tx-zone">Related Grid Zone (Optional for Budget Tracking):</label>
+            <select id="tx-zone" class="xp-select"></select>
+          </div>
+
+          <div class="xp-form-row">
+            <label for="tx-desc">Memo / Reference Note:</label>
+            <input type="text" id="tx-desc" class="xp-input" placeholder="e.g. Monthly utility settlement for Highway Zone 7">
+          </div>
+        </div>
+
+        <div class="xp-dialog-footer">
+          <button type="submit" class="xp-btn xp-btn-default">Post to Ledger</button>
+          <button type="button" class="xp-btn" onclick="CivicGridApp.closeModal('modal-transaction')">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Application Controller Script -->
+  <script src="js/app.js"></script>
+
+</body>
+</html>
