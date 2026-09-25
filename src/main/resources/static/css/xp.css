@@ -84,6 +84,10 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: linear-gradient(to bottom, #F5F1E0, #DED9BE);
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.4);
 }
 
 .xp-title-right {
