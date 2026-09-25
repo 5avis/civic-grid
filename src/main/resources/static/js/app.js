@@ -23,10 +23,10 @@ const CivicGridApp = (function () {
 
   // Currency Configuration
   const CURRENCIES = {
-    INR: { code: 'INR', symbol: '₹', locale: 'en-IN', label: '₹ Rupee (INR)' },
-    USD: { code: 'USD', symbol: '$', locale: 'en-US', label: '$ Dollar (USD)' },
-    EUR: { code: 'EUR', symbol: '€', locale: 'en-IE', label: '€ Euro (EUR)' },
-    GBP: { code: 'GBP', symbol: '£', locale: 'en-GB', label: '£ Pound (GBP)' }
+    INR: { code: 'INR', symbol: '₹', rate: 83.0, locale: 'en-IN', label: '₹ Rupee (INR)' },
+    USD: { code: 'USD', symbol: '$', rate: 1.0, locale: 'en-US', label: '$ Dollar (USD)' },
+    EUR: { code: 'EUR', symbol: '€', rate: 0.92, locale: 'en-IE', label: '€ Euro (EUR)' },
+    GBP: { code: 'GBP', symbol: '£', rate: 0.79, locale: 'en-GB', label: '£ Pound (GBP)' }
   };
 
   let currentCurrency = 'INR';
@@ -38,9 +38,12 @@ const CivicGridApp = (function () {
   } catch (e) {}
 
   function formatCurrency(amount, withSignPrefix = false) {
-    const val = typeof amount === 'number' ? amount : parseFloat(amount) || 0;
-    const absVal = Math.abs(val);
+    const rawVal = typeof amount === 'number' ? amount : parseFloat(amount) || 0;
     const cfg = CURRENCIES[currentCurrency] || CURRENCIES.INR;
+
+    // Multiply base USD value by the exchange rate before formatting and displaying
+    const convertedVal = rawVal * (cfg.rate != null ? cfg.rate : 1.0);
+    const absVal = Math.abs(convertedVal);
 
     const numStr = absVal.toLocaleString(cfg.locale, {
       minimumFractionDigits: 2,
@@ -48,11 +51,11 @@ const CivicGridApp = (function () {
     });
 
     if (withSignPrefix) {
-      const sign = val >= 0 ? '+' : '-';
+      const sign = convertedVal >= 0 ? '+' : '-';
       return `${sign}${cfg.symbol}${numStr}`;
     }
 
-    const sign = val < 0 ? '-' : '';
+    const sign = convertedVal < 0 ? '-' : '';
     return `${sign}${cfg.symbol}${numStr}`;
   }
 
@@ -695,12 +698,16 @@ const CivicGridApp = (function () {
       return;
     }
 
+    const cfg = CURRENCIES[currentCurrency] || CURRENCIES.INR;
+    // Convert user-entered currency amount to base USD for persistence
+    const baseUsdAmount = parseFloat((amount / (cfg.rate || 1.0)).toFixed(2));
+
     try {
-      setStatus(`Submitting ${type} transaction of ${formatCurrency(amount)}...`);
+      setStatus(`Submitting ${type} transaction of ${formatCurrency(baseUsdAmount)}...`);
       const res = await fetch('/api/transactions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type, amount, date, partyId, accountCode, zoneId, description })
+        body: JSON.stringify({ type, amount: baseUsdAmount, date, partyId, accountCode, zoneId, description })
       });
 
       if (!res.ok) {
@@ -712,7 +719,7 @@ const CivicGridApp = (function () {
       closeModal('modal-transaction');
       await fetchJournalEntries();
       await fetchReportData();
-      alert(`Success! Transaction posted.\nDocument: ${result.documentNumber || ''}\nJournal Entry: ${result.journalEntryNumber || 'Created'}\nAmount: ${formatCurrency(parseFloat(result.amount || amount))}`);
+      alert(`Success! Transaction posted.\nDocument: ${result.documentNumber || ''}\nJournal Entry: ${result.journalEntryNumber || 'Created'}\nAmount: ${formatCurrency(parseFloat(result.amount != null ? result.amount : baseUsdAmount))}`);
       setStatus(`Transaction posted to ledger.`);
     } catch (err) {
       alert('Failed to post transaction: ' + err.message);
