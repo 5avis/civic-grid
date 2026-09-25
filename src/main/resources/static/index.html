@@ -585,14 +585,14 @@
   <!-- =========================================================================
        MODAL 0: Windows XP Log On / Switch User Dialog (Opaque Backdrop)
        ========================================================================= -->
-  <div class="xp-modal-overlay" id="modal-login">
+  <div class="xp-modal-overlay open" id="modal-login">
     <div class="xp-dialog-box" style="width: 520px;">
       <div class="xp-title-bar">
         <div class="xp-title-content">
           <img src="icons8-info.svg?v=3" width="16" height="16" alt="" style="width: 16px; height: 16px; margin-right: 6px;">
           <span>Log On to CivicGrid System</span>
         </div>
-        <button class="xp-win-btn btn-close" onclick="CivicGridApp.cancelLogin()">X</button>
+        <button class="xp-win-btn btn-close" id="btn-close-login-x" onclick="CivicGridApp.cancelLogin()" style="display: none;">X</button>
       </div>
 
       <form id="login-form" onsubmit="CivicGridApp.handleLoginSubmit(event)">
@@ -651,7 +651,7 @@
 
         <div class="xp-dialog-footer" style="display: flex; justify-content: flex-end; gap: 6px;">
           <button type="submit" class="xp-btn xp-btn-default" style="min-width: 80px; font-weight: bold;">Log On</button>
-          <button type="button" class="xp-btn" onclick="CivicGridApp.cancelLogin()" id="btn-cancel-login">Cancel</button>
+          <button type="button" class="xp-btn" onclick="CivicGridApp.cancelLogin()" id="btn-cancel-login" style="display: none;">Cancel</button>
         </div>
       </form>
     </div>

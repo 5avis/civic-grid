@@ -118,7 +118,11 @@ const CivicGridApp = (function () {
   // User Role Management: ADMIN vs ACCOUNTANT
   // =========================================================================
 
-  let isLoggedIn = sessionStorage.getItem('civicgrid_logged_in') === 'true';
+  // User always starts unauthenticated on fresh load / page reload
+  let isLoggedIn = false;
+  try {
+    sessionStorage.removeItem('civicgrid_logged_in');
+  } catch (e) {}
 
   function initUserRole() {
     applyUserRole(currentUserRole);
@@ -183,6 +187,10 @@ const CivicGridApp = (function () {
     if (cancelBtn) {
       cancelBtn.style.display = (isMandatory || !isLoggedIn) ? 'none' : 'inline-block';
     }
+    const closeXBtn = document.getElementById('btn-close-login-x');
+    if (closeXBtn) {
+      closeXBtn.style.display = (isMandatory || !isLoggedIn) ? 'none' : 'inline-block';
+    }
 
     document.getElementById('modal-login')?.classList.add('open');
     setTimeout(() => pwdInput?.focus(), 100);
@@ -221,9 +229,6 @@ const CivicGridApp = (function () {
     // Shared password for both accounts: '1234' (also accept 'admin' or 'civicgrid')
     if (entered === '1234' || entered.toLowerCase() === 'admin' || entered.toLowerCase() === 'civicgrid') {
       isLoggedIn = true;
-      try {
-        sessionStorage.setItem('civicgrid_logged_in', 'true');
-      } catch (e) {}
       if (errorDiv) errorDiv.style.display = 'none';
 
       switchUserRole(pendingLoginRole);
@@ -254,10 +259,8 @@ const CivicGridApp = (function () {
     loadAllMasterData();
     refreshAllData();
 
-    // Open login box above the page with background not visible if not logged in
-    if (!isLoggedIn) {
-      openLoginModal(true);
-    }
+    // Always start the page with login dialog (mandatory)
+    openLoginModal(true);
 
     // Start 5-second live telemetry refresh to sync with @Scheduled backend simulator
     autoRefreshTimer = setInterval(() => {
