@@ -15,10 +15,96 @@ const CivicGridApp = (function () {
   let autoRefreshTimer = null;
   let isAutoRefreshEnabled = true;
 
+  // Financial caches for instant currency re-rendering
+  let lastJournalEntries = [];
+  let lastBalanceSheetData = null;
+  let lastPnlData = null;
+  let lastBudgetData = null;
+
+  // Currency Configuration
+  const CURRENCIES = {
+    INR: { code: 'INR', symbol: '₹', locale: 'en-IN', label: '₹ Rupee (INR)' },
+    USD: { code: 'USD', symbol: '$', locale: 'en-US', label: '$ Dollar (USD)' },
+    EUR: { code: 'EUR', symbol: '€', locale: 'en-IE', label: '€ Euro (EUR)' },
+    GBP: { code: 'GBP', symbol: '£', locale: 'en-GB', label: '£ Pound (GBP)' }
+  };
+
+  let currentCurrency = 'INR';
+  try {
+    const saved = localStorage.getItem('civicgrid_currency');
+    if (saved && CURRENCIES[saved]) {
+      currentCurrency = saved;
+    }
+  } catch (e) {}
+
+  function formatCurrency(amount, withSignPrefix = false) {
+    const val = typeof amount === 'number' ? amount : parseFloat(amount) || 0;
+    const absVal = Math.abs(val);
+    const cfg = CURRENCIES[currentCurrency] || CURRENCIES.INR;
+
+    const numStr = absVal.toLocaleString(cfg.locale, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+
+    if (withSignPrefix) {
+      const sign = val >= 0 ? '+' : '-';
+      return `${sign}${cfg.symbol}${numStr}`;
+    }
+
+    const sign = val < 0 ? '-' : '';
+    return `${sign}${cfg.symbol}${numStr}`;
+  }
+
+  function setCurrency(code) {
+    if (!CURRENCIES[code]) return;
+    currentCurrency = code;
+    try {
+      localStorage.setItem('civicgrid_currency', code);
+    } catch (e) {}
+
+    const sel = document.getElementById('currency-selector');
+    if (sel && sel.value !== code) {
+      sel.value = code;
+    }
+
+    const sym = CURRENCIES[code].symbol;
+    document.querySelectorAll('.currency-sym').forEach((el) => {
+      el.textContent = sym;
+    });
+
+    if (lastJournalEntries && lastJournalEntries.length > 0) {
+      renderJournalEntries(lastJournalEntries);
+    }
+    if (lastBalanceSheetData) {
+      renderBalanceSheet(lastBalanceSheetData);
+    }
+    if (lastPnlData) {
+      renderProfitAndLoss(lastPnlData);
+    }
+    if (lastBudgetData) {
+      renderBudgetReport(lastBudgetData);
+    }
+
+    setStatus(`Currency display updated to ${CURRENCIES[code].label}`);
+  }
+
+  function initCurrency() {
+    const sel = document.getElementById('currency-selector');
+    if (sel) {
+      sel.value = currentCurrency;
+    }
+    const sym = (CURRENCIES[currentCurrency] || CURRENCIES.INR).symbol;
+    document.querySelectorAll('.currency-sym').forEach((el) => {
+      el.textContent = sym;
+    });
+  }
+
   // Initialize Application
   function init() {
     initClock();
     initEventListeners();
+    initCurrency();
     loadAllMasterData();
     refreshAllData();
 
@@ -521,6 +607,7 @@ const CivicGridApp = (function () {
       const res = await fetch('/api/journal-entries');
       if (!res.ok) throw new Error('HTTP ' + res.status);
       const entries = await res.json();
+      lastJournalEntries = entries;
       renderJournalEntries(entries);
       setStatus(`Loaded ${entries.length} journal ledger entries.`);
     } catch (err) {
@@ -559,10 +646,10 @@ const CivicGridApp = (function () {
           <td><span style="font-family: monospace; font-weight: bold; background: #eee; padding: 1px 4px; border: 1px solid #ccc;">${escapeHtml(accountCode)}</span></td>
           <td>${escapeHtml(accountName)}</td>
           <td style="text-align: right; color: ${debitVal > 0 ? '#003c74' : '#999'}; font-weight: ${debitVal > 0 ? 'bold' : 'normal'};">
-            ${debitVal > 0 ? '$' + debitVal.toFixed(2) : '-'}
+            ${debitVal > 0 ? formatCurrency(debitVal) : '-'}
           </td>
           <td style="text-align: right; color: ${creditVal > 0 ? '#1b5e20' : '#999'}; font-weight: ${creditVal > 0 ? 'bold' : 'normal'};">
-            ${creditVal > 0 ? '$' + creditVal.toFixed(2) : '-'}
+            ${creditVal > 0 ? formatCurrency(creditVal) : '-'}
           </td>
           <td>${escapeHtml(e.description || e.reference || '')}</td>
         </tr>
@@ -571,15 +658,15 @@ const CivicGridApp = (function () {
 
     const isBalanced = Math.abs(totalDebit - totalCredit) < 0.01;
     document.getElementById('kpi-ledger-status').textContent = isBalanced
-      ? `Balanced ($${totalDebit.toFixed(2)})`
-      : `UNBALANCED (D:$${totalDebit.toFixed(2)} ≠ C:$${totalCredit.toFixed(2)})`;
+      ? `Balanced (${formatCurrency(totalDebit)})`
+      : `UNBALANCED (D:${formatCurrency(totalDebit)} ≠ C:${formatCurrency(totalCredit)})`;
 
     if (tfoot) {
       tfoot.innerHTML = `
         <tr>
           <td colspan="4" style="text-align: right; font-weight: bold;">TOTALS (${isBalanced ? 'BALANCED' : 'UNBALANCED'}):</td>
-          <td style="text-align: right; font-weight: bold; color: #003c74;">$${totalDebit.toFixed(2)}</td>
-          <td style="text-align: right; font-weight: bold; color: #1b5e20;">$${totalCredit.toFixed(2)}</td>
+          <td style="text-align: right; font-weight: bold; color: #003c74;">${formatCurrency(totalDebit)}</td>
+          <td style="text-align: right; font-weight: bold; color: #1b5e20;">${formatCurrency(totalCredit)}</td>
           <td></td>
         </tr>
       `;
@@ -604,12 +691,12 @@ const CivicGridApp = (function () {
     const description = document.getElementById('tx-desc').value.trim();
 
     if (!type || isNaN(amount) || amount <= 0 || !accountCode) {
-      alert('Please fill in transaction type, valid amount > $0, and target account.');
+      alert('Please fill in transaction type, valid amount > 0, and target account.');
       return;
     }
 
     try {
-      setStatus(`Submitting ${type} transaction of $${amount.toFixed(2)}...`);
+      setStatus(`Submitting ${type} transaction of ${formatCurrency(amount)}...`);
       const res = await fetch('/api/transactions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -625,7 +712,7 @@ const CivicGridApp = (function () {
       closeModal('modal-transaction');
       await fetchJournalEntries();
       await fetchReportData();
-      alert(`Success! Transaction posted.\nDocument: ${result.documentNumber || ''}\nJournal Entry: ${result.journalEntryNumber || 'Created'}\nAmount: $${parseFloat(result.amount || amount).toFixed(2)}`);
+      alert(`Success! Transaction posted.\nDocument: ${result.documentNumber || ''}\nJournal Entry: ${result.journalEntryNumber || 'Created'}\nAmount: ${formatCurrency(parseFloat(result.amount || amount))}`);
       setStatus(`Transaction posted to ledger.`);
     } catch (err) {
       alert('Failed to post transaction: ' + err.message);
@@ -648,59 +735,63 @@ const CivicGridApp = (function () {
       const res = await fetch('/api/reports/balance-sheet');
       if (!res.ok) throw new Error('HTTP ' + res.status);
       const data = await res.json();
-
-      const tbodyAssets = document.getElementById('bs-assets-tbody');
-      const tbodyLiab = document.getElementById('bs-liab-tbody');
-
-      if (tbodyAssets) {
-        tbodyAssets.innerHTML = (data.assets || []).map(a => `
-          <tr>
-            <td><span style="font-family: monospace;">${a.accountCode}</span></td>
-            <td><strong>${escapeHtml(a.accountName)}</strong></td>
-            <td style="text-align: right; color: #003c74;">$${parseFloat(a.balance || 0).toFixed(2)}</td>
-          </tr>
-        `).join('') + `
-          <tr style="background: #eef3eb; font-weight: bold;">
-            <td colspan="2">TOTAL ASSETS</td>
-            <td style="text-align: right; color: #003c74;">$${parseFloat(data.totalAssets || 0).toFixed(2)}</td>
-          </tr>
-        `;
-      }
-
-      if (tbodyLiab) {
-        tbodyLiab.innerHTML = (data.liabilities || []).map(l => `
-          <tr>
-            <td><span style="font-family: monospace;">${l.accountCode}</span></td>
-            <td><strong>${escapeHtml(l.accountName)}</strong></td>
-            <td style="text-align: right; color: #cc3719;">$${parseFloat(l.balance || 0).toFixed(2)}</td>
-          </tr>
-        `).join('') + `
-          <tr style="background: #fdf5f5; font-weight: bold;">
-            <td colspan="2">TOTAL LIABILITIES</td>
-            <td style="text-align: right; color: #cc3719;">$${parseFloat(data.totalLiabilities || 0).toFixed(2)}</td>
-          </tr>
-          <tr>
-            <td><span style="font-family: monospace;">3999</span></td>
-            <td><strong>Retained Earnings / Operational Equity</strong></td>
-            <td style="text-align: right; color: #1b5e20;">$${parseFloat(data.retainedEarnings || 0).toFixed(2)}</td>
-          </tr>
-          <tr style="background: #eef3eb; font-weight: bold; border-top: 2px solid #526f45;">
-            <td colspan="2">TOTAL LIABILITIES & EQUITY</td>
-            <td style="text-align: right; color: #1b5e20;">$${parseFloat(data.totalLiabilitiesAndEquity || 0).toFixed(2)}</td>
-          </tr>
-        `;
-      }
-
-      const balCheck = document.getElementById('bs-balance-check');
-      if (balCheck) {
-        balCheck.innerHTML = data.balanced
-          ? `<span style="color: #155724; font-weight: bold;">Statement in Balance (Assets = Liabilities + Equity)</span>`
-          : `<span style="color: #cc3719; font-weight: bold;">Variance Detected in Double-Entry Equation</span>`;
-      }
-
+      lastBalanceSheetData = data;
+      renderBalanceSheet(data);
       setStatus('Balance Sheet generated.');
     } catch (err) {
       setStatus('Error loading Balance Sheet: ' + err.message);
+    }
+  }
+
+  function renderBalanceSheet(data) {
+    if (!data) return;
+    const tbodyAssets = document.getElementById('bs-assets-tbody');
+    const tbodyLiab = document.getElementById('bs-liab-tbody');
+
+    if (tbodyAssets) {
+      tbodyAssets.innerHTML = (data.assets || []).map(a => `
+        <tr>
+          <td><span style="font-family: monospace;">${a.accountCode}</span></td>
+          <td><strong>${escapeHtml(a.accountName)}</strong></td>
+          <td style="text-align: right; color: #003c74;">${formatCurrency(a.balance)}</td>
+        </tr>
+      `).join('') + `
+        <tr style="background: #eef3eb; font-weight: bold;">
+          <td colspan="2">TOTAL ASSETS</td>
+          <td style="text-align: right; color: #003c74;">${formatCurrency(data.totalAssets)}</td>
+        </tr>
+      `;
+    }
+
+    if (tbodyLiab) {
+      tbodyLiab.innerHTML = (data.liabilities || []).map(l => `
+        <tr>
+          <td><span style="font-family: monospace;">${l.accountCode}</span></td>
+          <td><strong>${escapeHtml(l.accountName)}</strong></td>
+          <td style="text-align: right; color: #cc3719;">${formatCurrency(l.balance)}</td>
+        </tr>
+      `).join('') + `
+        <tr style="background: #fdf5f5; font-weight: bold;">
+          <td colspan="2">TOTAL LIABILITIES</td>
+          <td style="text-align: right; color: #cc3719;">${formatCurrency(data.totalLiabilities)}</td>
+        </tr>
+        <tr>
+          <td><span style="font-family: monospace;">3999</span></td>
+          <td><strong>Retained Earnings / Operational Equity</strong></td>
+          <td style="text-align: right; color: #1b5e20;">${formatCurrency(data.retainedEarnings)}</td>
+        </tr>
+        <tr style="background: #eef3eb; font-weight: bold; border-top: 2px solid #526f45;">
+          <td colspan="2">TOTAL LIABILITIES & EQUITY</td>
+          <td style="text-align: right; color: #1b5e20;">${formatCurrency(data.totalLiabilitiesAndEquity)}</td>
+        </tr>
+      `;
+    }
+
+    const balCheck = document.getElementById('bs-balance-check');
+    if (balCheck) {
+      balCheck.innerHTML = data.balanced
+        ? `<span style="color: #155724; font-weight: bold;">Statement in Balance (Assets = Liabilities + Equity)</span>`
+        : `<span style="color: #cc3719; font-weight: bold;">Variance Detected in Double-Entry Equation</span>`;
     }
   }
 
@@ -710,54 +801,58 @@ const CivicGridApp = (function () {
       const res = await fetch('/api/reports/pnl');
       if (!res.ok) throw new Error('HTTP ' + res.status);
       const data = await res.json();
-
-      const tbodyIncome = document.getElementById('pnl-income-tbody');
-      const tbodyExpense = document.getElementById('pnl-expense-tbody');
-
-      if (tbodyIncome) {
-        tbodyIncome.innerHTML = (data.income || []).map(i => `
-          <tr>
-            <td><span style="font-family: monospace;">${i.accountCode}</span></td>
-            <td><strong>${escapeHtml(i.accountName)}</strong></td>
-            <td style="text-align: right; color: #1b5e20;">$${parseFloat(i.balance || 0).toFixed(2)}</td>
-          </tr>
-        `).join('') + `
-          <tr style="background: #eef3eb; font-weight: bold;">
-            <td colspan="2">TOTAL REVENUE / FEES</td>
-            <td style="text-align: right; color: #1b5e20;">$${parseFloat(data.totalIncome || 0).toFixed(2)}</td>
-          </tr>
-        `;
-      }
-
-      if (tbodyExpense) {
-        tbodyExpense.innerHTML = (data.expenses || []).map(e => `
-          <tr>
-            <td><span style="font-family: monospace;">${e.accountCode}</span></td>
-            <td><strong>${escapeHtml(e.accountName)}</strong></td>
-            <td style="text-align: right; color: #cc3719;">$${parseFloat(e.balance || 0).toFixed(2)}</td>
-          </tr>
-        `).join('') + `
-          <tr style="background: #fdf5f5; font-weight: bold;">
-            <td colspan="2">TOTAL OPERATING EXPENSES</td>
-            <td style="text-align: right; color: #cc3719;">$${parseFloat(data.totalExpenses || 0).toFixed(2)}</td>
-          </tr>
-        `;
-      }
-
-      const netMargin = parseFloat(data.netProfitOrLoss || 0);
-      const netEl = document.getElementById('pnl-net-result');
-      if (netEl) {
-        netEl.innerHTML = `
-          <strong>NET OPERATING MARGIN:</strong>
-          <span style="font-size: 16px; font-weight: bold; color: ${netMargin >= 0 ? '#1b5e20' : '#cc3719'};">
-            ${netMargin >= 0 ? '+$' : '-$'}${Math.abs(netMargin).toFixed(2)}
-          </span>
-        `;
-      }
-
+      lastPnlData = data;
+      renderProfitAndLoss(data);
       setStatus('Profit & Loss statement generated.');
     } catch (err) {
       setStatus('Error loading P&L: ' + err.message);
+    }
+  }
+
+  function renderProfitAndLoss(data) {
+    if (!data) return;
+    const tbodyIncome = document.getElementById('pnl-income-tbody');
+    const tbodyExpense = document.getElementById('pnl-expense-tbody');
+
+    if (tbodyIncome) {
+      tbodyIncome.innerHTML = (data.income || []).map(i => `
+        <tr>
+          <td><span style="font-family: monospace;">${i.accountCode}</span></td>
+          <td><strong>${escapeHtml(i.accountName)}</strong></td>
+          <td style="text-align: right; color: #1b5e20;">${formatCurrency(i.balance)}</td>
+        </tr>
+      `).join('') + `
+        <tr style="background: #eef3eb; font-weight: bold;">
+          <td colspan="2">TOTAL REVENUE / FEES</td>
+          <td style="text-align: right; color: #1b5e20;">${formatCurrency(data.totalIncome)}</td>
+        </tr>
+      `;
+    }
+
+    if (tbodyExpense) {
+      tbodyExpense.innerHTML = (data.expenses || []).map(e => `
+        <tr>
+          <td><span style="font-family: monospace;">${e.accountCode}</span></td>
+          <td><strong>${escapeHtml(e.accountName)}</strong></td>
+          <td style="text-align: right; color: #cc3719;">${formatCurrency(e.balance)}</td>
+        </tr>
+      `).join('') + `
+        <tr style="background: #fdf5f5; font-weight: bold;">
+          <td colspan="2">TOTAL OPERATING EXPENSES</td>
+          <td style="text-align: right; color: #cc3719;">${formatCurrency(data.totalExpenses)}</td>
+        </tr>
+      `;
+    }
+
+    const netMargin = parseFloat(data.netProfitOrLoss || 0);
+    const netEl = document.getElementById('pnl-net-result');
+    if (netEl) {
+      netEl.innerHTML = `
+        <strong>NET OPERATING MARGIN:</strong>
+        <span style="font-size: 16px; font-weight: bold; color: ${netMargin >= 0 ? '#1b5e20' : '#cc3719'};">
+          ${formatCurrency(netMargin, true)}
+        </span>
+      `;
     }
   }
 
@@ -767,52 +862,56 @@ const CivicGridApp = (function () {
       const res = await fetch('/api/reports/budget?year=2026');
       if (!res.ok) throw new Error('HTTP ' + res.status);
       const data = await res.json();
-
-      const tbody = document.getElementById('budget-tbody');
-      if (!tbody) return;
-
-      tbody.innerHTML = (data.zoneReports || []).map(b => {
-        const planned = parseFloat(b.plannedAmount ?? b.allocatedBudget ?? 0);
-        const actual = parseFloat(b.actualAmount ?? b.actualSpend ?? 0);
-        const variance = parseFloat(b.varianceAmount ?? b.variance ?? 0);
-        const utilPercent = b.utilizationPercentage != null ? Math.round(b.utilizationPercentage) : (planned > 0 ? Math.round((actual / planned) * 100) : 0);
-        const isOver = b.status === 'OVER_BUDGET' || variance < 0;
-
-        return `
-          <tr>
-            <td><strong>${escapeHtml(b.zoneName)}</strong></td>
-            <td>FY${data.fiscalYear || 2026}</td>
-            <td style="text-align: right;">$${planned.toFixed(2)}</td>
-            <td style="text-align: right; font-weight: bold; color: ${isOver ? '#cc3719' : '#003c74'};">$${actual.toFixed(2)}</td>
-            <td style="text-align: right; font-weight: bold; color: ${isOver ? '#cc3719' : '#1b5e20'};">
-              ${isOver ? '-$' + Math.abs(variance).toFixed(2) : '+$' + variance.toFixed(2)}
-            </td>
-            <td style="width: 140px;">
-              <div style="display: flex; align-items: center; gap: 6px;">
-                <div class="xp-progress-outer" style="height: 12px; flex: 1;">
-                  <div class="xp-progress-inner ${isOver ? 'overbudget' : ''}" style="width: ${Math.min(utilPercent, 100)}%;"></div>
-                </div>
-                <span style="font-size: 10px; width: 34px;">${utilPercent}%</span>
-              </div>
-            </td>
-          </tr>
-        `;
-      }).join('') + `
-        <tr style="background: #f0ede0; font-weight: bold; border-top: 2px solid #526f45;">
-          <td colspan="2">TOTAL CONSOLIDATED GRID BUDGET</td>
-          <td style="text-align: right;">$${parseFloat(data.totalPlanned || 0).toFixed(2)}</td>
-          <td style="text-align: right; color: #003c74;">$${parseFloat(data.totalActual || 0).toFixed(2)}</td>
-          <td style="text-align: right; color: ${data.totalVariance < 0 ? '#cc3719' : '#1b5e20'};">
-            ${data.totalVariance < 0 ? '-$' + Math.abs(data.totalVariance).toFixed(2) : '+$' + parseFloat(data.totalVariance || 0).toFixed(2)}
-          </td>
-          <td></td>
-        </tr>
-      `;
-
+      lastBudgetData = data;
+      renderBudgetReport(data);
       setStatus('Budget Variance report generated.');
     } catch (err) {
       setStatus('Error loading budget report: ' + err.message);
     }
+  }
+
+  function renderBudgetReport(data) {
+    if (!data) return;
+    const tbody = document.getElementById('budget-tbody');
+    if (!tbody) return;
+
+    tbody.innerHTML = (data.zoneReports || []).map(b => {
+      const planned = parseFloat(b.plannedAmount ?? b.allocatedBudget ?? 0);
+      const actual = parseFloat(b.actualAmount ?? b.actualSpend ?? 0);
+      const variance = parseFloat(b.varianceAmount ?? b.variance ?? 0);
+      const utilPercent = b.utilizationPercentage != null ? Math.round(b.utilizationPercentage) : (planned > 0 ? Math.round((actual / planned) * 100) : 0);
+      const isOver = b.status === 'OVER_BUDGET' || variance < 0;
+
+      return `
+        <tr>
+          <td><strong>${escapeHtml(b.zoneName)}</strong></td>
+          <td>FY${data.fiscalYear || 2026}</td>
+          <td style="text-align: right;">${formatCurrency(planned)}</td>
+          <td style="text-align: right; font-weight: bold; color: ${isOver ? '#cc3719' : '#003c74'};">${formatCurrency(actual)}</td>
+          <td style="text-align: right; font-weight: bold; color: ${isOver ? '#cc3719' : '#1b5e20'};">
+            ${formatCurrency(variance, true)}
+          </td>
+          <td style="width: 140px;">
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <div class="xp-progress-outer" style="height: 12px; flex: 1;">
+                <div class="xp-progress-inner ${isOver ? 'overbudget' : ''}" style="width: ${Math.min(utilPercent, 100)}%;"></div>
+              </div>
+              <span style="font-size: 10px; width: 34px;">${utilPercent}%</span>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('') + `
+      <tr style="background: #f0ede0; font-weight: bold; border-top: 2px solid #526f45;">
+        <td colspan="2">TOTAL CONSOLIDATED GRID BUDGET</td>
+        <td style="text-align: right;">${formatCurrency(data.totalPlanned)}</td>
+        <td style="text-align: right; color: #003c74;">${formatCurrency(data.totalActual)}</td>
+        <td style="text-align: right; color: ${data.totalVariance < 0 ? '#cc3719' : '#1b5e20'};">
+          ${formatCurrency(data.totalVariance, true)}
+        </td>
+        <td></td>
+      </tr>
+    `;
   }
 
   // =========================================================================
@@ -877,7 +976,9 @@ const CivicGridApp = (function () {
     handleTransactionSubmit,
     resolveFault,
     closeModal,
-    openAboutDialog
+    openAboutDialog,
+    setCurrency,
+    formatCurrency
   };
 })();
 
