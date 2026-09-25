@@ -762,7 +762,7 @@ const CivicGridApp = (function () {
           <button class="xp-btn xp-btn-sm xp-btn-resolved"
                   ${isAdmin ? `onclick="CivicGridApp.toggleFaultTicket(${t.id})"` : 'disabled'}
                   title="${isAdmin ? 'Click to change status to Not Resolved (Reopen ticket)' : 'Admin access required to change ticket resolution status'}">
-            ✓ Resolved
+            Resolved
           </button>
         `;
       } else {
@@ -770,7 +770,7 @@ const CivicGridApp = (function () {
           <button class="xp-btn xp-btn-sm xp-btn-not-resolved"
                   ${isAdmin ? `onclick="CivicGridApp.toggleFaultTicket(${t.id})"` : 'disabled'}
                   title="${isAdmin ? 'Click to change status to Resolved' : 'Admin access required to change ticket resolution status'}">
-            ⚠️ Not Resolved
+            Not Resolved
           </button>
         `;
       }
@@ -887,7 +887,7 @@ const CivicGridApp = (function () {
     const isBalanced = Math.abs(totalDebit - totalCredit) < 0.01;
     document.getElementById('kpi-ledger-status').textContent = isBalanced
       ? `Balanced (${formatCurrency(totalDebit)})`
-      : `UNBALANCED (D:${formatCurrency(totalDebit)} ≠ C:${formatCurrency(totalCredit)})`;
+      : `UNBALANCED (D:${formatCurrency(totalDebit)} != C:${formatCurrency(totalCredit)})`;
 
     if (tfoot) {
       tfoot.innerHTML = `

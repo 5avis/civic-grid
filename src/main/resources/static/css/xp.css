@@ -499,7 +499,7 @@ html, body {
   font-size: 11px;
   padding: 3px 12px;
   background: linear-gradient(180deg, #ffffff 0%, #ece9d8 50%, #d4cfb8 100%);
-  border: 1px solid #003c74;
+  border: 1px solid #716f64;
   border-radius: 3px;
   box-shadow: inset 1px 1px 0 #fff;
   cursor: pointer;
@@ -512,7 +512,7 @@ html, body {
 
 .xp-btn:hover {
   background: linear-gradient(180deg, #ffffff 0%, #fdf7e3 50%, #e8dec0 100%);
-  box-shadow: 0 0 3px #e5a730;
+  box-shadow: 0 0 3px #d4cfb8;
 }
 
 .xp-btn:active {
@@ -521,7 +521,7 @@ html, body {
 }
 
 .xp-btn-default {
-  border: 2px solid #0055ea;
+  border: 2px solid #526f45;
   font-weight: 700;
 }
 
@@ -545,7 +545,7 @@ html, body {
 }
 
 .xp-input:focus, .xp-select:focus, .xp-textarea:focus {
-  border-color: #0055ea;
+  border-color: #526f45;
 }
 
 /* Status Badges */
@@ -707,29 +707,29 @@ html, body {
    User Login, Role Badges & Dual Status Toggle Buttons
    ========================================================================== */
 
-/* Resolved & Not Resolved Toggle Buttons */
+/* Resolved & Not Resolved Toggle Buttons (Theme-Matched) */
 .xp-btn-resolved {
-  background: linear-gradient(180deg, #f0fdf4 0%, #dcfce7 50%, #bbf7d0 100%) !important;
-  border: 1px solid #86efac !important;
-  color: #166534 !important;
+  background: linear-gradient(180deg, #f2f7ef 0%, #dde8d6 50%, #c6dac1 100%) !important;
+  border: 1px solid #749666 !important;
+  color: #1b3812 !important;
   font-weight: 700 !important;
   cursor: pointer;
 }
 .xp-btn-resolved:hover:not(:disabled) {
-  background: linear-gradient(180deg, #dcfce7 0%, #bbf7d0 100%) !important;
-  border-color: #4ade80 !important;
+  background: linear-gradient(180deg, #dde8d6 0%, #b8d4af 100%) !important;
+  border-color: #526f45 !important;
 }
 
 .xp-btn-not-resolved {
-  background: linear-gradient(180deg, #fff7ed 0%, #ffedd5 50%, #fed7aa 100%) !important;
-  border: 1px solid #fdba74 !important;
-  color: #9a3412 !important;
+  background: linear-gradient(180deg, #fbf7ef 0%, #f0e2c5 50%, #e2d1aa 100%) !important;
+  border: 1px solid #ba9656 !important;
+  color: #6a2a11 !important;
   font-weight: 700 !important;
   cursor: pointer;
 }
 .xp-btn-not-resolved:hover:not(:disabled) {
-  background: linear-gradient(180deg, #ffedd5 0%, #fed7aa 100%) !important;
-  border-color: #f97316 !important;
+  background: linear-gradient(180deg, #f0e2c5 0%, #d8bf8d 100%) !important;
+  border-color: #9c6c2e !important;
 }
 
 /* Disabled State for XP Buttons */
@@ -740,10 +740,10 @@ html, body {
   border-color: #d1cfc7 !important;
 }
 
-/* Login Modal Solid Overlay - Completely hides background page */
+/* Login Modal Solid Overlay - Completely hides background page using Olive Theme Desktop */
 #modal-login {
-  background: #002c8b !important;
-  background: radial-gradient(circle at 50% 40%, #0053e1 0%, #002c8b 65%, #00133b 100%) !important;
+  background: #4a6b46 !important;
+  background: radial-gradient(circle at 50% 35%, #769a68 0%, #46673e 70%, #2e4727 100%) !important;
   opacity: 1 !important;
   z-index: 999999 !important;
 }
@@ -751,7 +751,8 @@ html, body {
 #modal-login .xp-dialog-box {
   width: 520px;
   max-width: 95vw;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(255, 255, 255, 0.2);
+  border: 3px solid #435e38;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(255, 255, 255, 0.2);
 }
 
 .xp-login-user-card {
@@ -768,19 +769,20 @@ html, body {
 }
 
 .xp-login-user-card:hover {
-  background: #f4f8fd;
-  border-color: #0055ea;
+  background: #f6f8f4;
+  border-color: #526f45;
 }
 
 .xp-login-user-card.selected {
-  background: #f0f6ff;
-  border-color: #0055ea;
-  box-shadow: 0 0 0 1px #0055ea;
+  background: #eef3ec;
+  border-color: #526f45;
+  box-shadow: 0 0 0 1px #526f45;
 }
 
 .xp-login-card-radio {
   margin-top: 3px;
   cursor: pointer;
+  accent-color: #526f45;
 }
 
 .xp-login-note-box {
@@ -792,13 +794,13 @@ html, body {
 }
 
 .xp-login-note-box.admin {
-  background: #f4faf4;
-  border: 1px solid #c3e6cb;
-  color: #155724;
+  background: #f2f6f0;
+  border: 1px solid #c5d8bf;
+  color: #243d1a;
 }
 
 .xp-login-note-box.accountant {
-  background: #fdfcee;
-  border: 1px solid #e0d8b0;
-  color: #7d5a00;
+  background: #f7f5ed;
+  border: 1px solid #ded8c5;
+  color: #3b3724;
 }
