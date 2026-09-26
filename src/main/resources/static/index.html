@@ -150,10 +150,10 @@
 
       <!-- User Role Selector & Currency -->
       <div style="margin-left: auto; display: flex; align-items: center; gap: 8px; padding-right: 4px;">
-        <!-- User Switcher Widget (No Emoji) -->
+        <!-- User Switcher Widget (Secure with Password Authentication) -->
         <div style="display: flex; align-items: center; gap: 5px; background: #fff; border: 1px solid #7f9db9; padding: 1px 6px; border-radius: 2px;">
           <label for="user-role-select" style="font-size: 11px; font-weight: bold; color: #333;">User:</label>
-          <select id="user-role-select" class="xp-select" style="padding: 1px 4px; height: 21px; font-weight: bold; font-family: var(--xp-font); font-size: 11px; cursor: pointer; background: #fff;" onchange="CivicGridApp.switchUserRole(this.value)">
+          <select id="user-role-select" class="xp-select" style="padding: 1px 4px; height: 21px; font-weight: bold; font-family: var(--xp-font); font-size: 11px; cursor: pointer; background: #fff;" onchange="CivicGridApp.onUserSelectChange(this.value)">
             <option value="ADMIN" selected>Admin (Administrator)</option>
             <option value="ACCOUNTANT">Accountant (Finance)</option>
           </select>
@@ -374,9 +374,9 @@
             <button class="xp-btn xp-btn-sm" onclick="CivicGridApp.refreshAllData()">Refresh</button>
           </div>
 
-          <div style="display: flex; gap: 12px; height: calc(100% - 35px);">
+          <div class="xp-reports-table-row">
             <!-- Assets Table -->
-            <div class="xp-table-wrapper" style="flex: 1;">
+            <div class="xp-table-wrapper xp-report-table-wrapper">
               <table class="xp-list-view">
                 <thead>
                   <tr>
@@ -393,7 +393,7 @@
             </div>
 
             <!-- Liabilities & Equity Table -->
-            <div class="xp-table-wrapper" style="flex: 1;">
+            <div class="xp-table-wrapper xp-report-table-wrapper">
               <table class="xp-list-view">
                 <thead>
                   <tr>
@@ -418,9 +418,9 @@
             <button class="xp-btn xp-btn-sm" onclick="CivicGridApp.refreshAllData()">Refresh</button>
           </div>
 
-          <div style="display: flex; gap: 12px; height: calc(100% - 35px);">
+          <div class="xp-reports-table-row">
             <!-- Income Table -->
-            <div class="xp-table-wrapper" style="flex: 1;">
+            <div class="xp-table-wrapper xp-report-table-wrapper">
               <table class="xp-list-view">
                 <thead>
                   <tr>
@@ -437,7 +437,7 @@
             </div>
 
             <!-- Expenses Table -->
-            <div class="xp-table-wrapper" style="flex: 1;">
+            <div class="xp-table-wrapper xp-report-table-wrapper">
               <table class="xp-list-view">
                 <thead>
                   <tr>
@@ -462,7 +462,7 @@
             <button class="xp-btn xp-btn-sm" onclick="CivicGridApp.refreshAllData()">Refresh</button>
           </div>
 
-          <div class="xp-table-wrapper">
+          <div class="xp-table-wrapper xp-report-table-wrapper">
             <table class="xp-list-view">
               <thead>
                 <tr>
@@ -638,13 +638,10 @@
             </div>
           </div>
 
-          <!-- Password Field (Shared for both accounts) -->
+          <!-- Password Field -->
           <div class="xp-form-row" style="margin-top: 14px; background: #f7f5ed; border: 1px solid #aca899; padding: 10px 12px; border-radius: 3px;">
             <label for="login-password" style="font-weight: bold; font-size: 11px;">Password:</label>
-            <input type="password" id="login-password" class="xp-input" placeholder="Enter password (default: 1234)" style="width: 100%; height: 26px; font-size: 12px; margin-top: 4px;" required autofocus>
-            <div style="font-size: 10.5px; color: #666; margin-top: 4px;">
-              Password for both accounts: <strong style="color: #243d1a; background: #eae5d2; padding: 1px 5px; border: 1px solid #c9c1a5; border-radius: 2px;">1234</strong> (or <code>admin</code>)
-            </div>
+            <input type="password" id="login-password" class="xp-input" placeholder="Enter password" style="width: 100%; height: 26px; font-size: 12px; margin-top: 4px;" required autofocus>
             <div id="login-error-msg" style="color: #cc3719; font-weight: bold; font-size: 11px; margin-top: 6px; display: none;"></div>
           </div>
         </div>

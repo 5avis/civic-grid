@@ -169,14 +169,29 @@ const CivicGridApp = (function () {
     if (faultsCache && faultsCache.length) renderFaultTickets(faultsCache);
   }
 
-  function switchUserRole(role) {
+  function switchUserRole(role, authenticated = false) {
     if (role !== 'ADMIN' && role !== 'ACCOUNTANT') role = 'ADMIN';
+    if (!authenticated) {
+      if (role === currentUserRole) return;
+      openLoginModal(false, role);
+      return;
+    }
     applyUserRole(role);
     setStatus(`Switched active user to ${role === 'ADMIN' ? 'Administrator' : 'Accountant'}.`);
   }
 
-  function openLoginModal(isMandatory = false) {
-    pendingLoginRole = currentUserRole;
+  function onUserSelectChange(targetRole) {
+    const userSelect = document.getElementById('user-role-select');
+    if (userSelect) {
+      userSelect.value = currentUserRole;
+    }
+    if (targetRole && targetRole !== currentUserRole) {
+      openLoginModal(false, targetRole);
+    }
+  }
+
+  function openLoginModal(isMandatory = false, targetRole = null) {
+    pendingLoginRole = (targetRole === 'ADMIN' || targetRole === 'ACCOUNTANT') ? targetRole : currentUserRole;
     selectLoginCard(pendingLoginRole);
     const pwdInput = document.getElementById('login-password');
     if (pwdInput) pwdInput.value = '';
@@ -200,6 +215,10 @@ const CivicGridApp = (function () {
     if (!isLoggedIn) {
       alert('Please enter the password to log on to CivicGrid.');
       return;
+    }
+    const userSelect = document.getElementById('user-role-select');
+    if (userSelect) {
+      userSelect.value = currentUserRole;
     }
     closeModal('modal-login');
   }
@@ -226,17 +245,17 @@ const CivicGridApp = (function () {
     const errorDiv = document.getElementById('login-error-msg');
     const entered = (pwdInput?.value || '').trim();
 
-    // Shared password for both accounts: '1234' (also accept 'admin' or 'civicgrid')
-    if (entered === '1234' || entered.toLowerCase() === 'admin' || entered.toLowerCase() === 'civicgrid') {
+    // Password changed to cva (case-insensitive)
+    if (entered === 'cva' || entered.toLowerCase() === 'cva') {
       isLoggedIn = true;
       if (errorDiv) errorDiv.style.display = 'none';
 
-      switchUserRole(pendingLoginRole);
+      switchUserRole(pendingLoginRole, true);
       closeModal('modal-login');
       setStatus(`Logged on as ${pendingLoginRole === 'ADMIN' ? 'Administrator' : 'Accountant'}.`);
     } else {
       if (errorDiv) {
-        errorDiv.textContent = 'Invalid password. Shared password for both users is: 1234';
+        errorDiv.textContent = 'Invalid password. Please try again.';
         errorDiv.style.display = 'block';
       }
       if (pwdInput) {
@@ -1212,6 +1231,7 @@ const CivicGridApp = (function () {
     resolveFault,
     toggleFaultTicket,
     switchUserRole,
+    onUserSelectChange,
     openLoginModal,
     selectLoginCard,
     confirmUserLogin,
