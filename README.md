@@ -15,6 +15,7 @@
 - **Smart Lighting Operations**: Centralized pole registry, real-time dimming control (0%–100%), power draw telemetry, and zone allocation.
 - **Automated Night-Time Fault Simulator**: A background `@Scheduled` engine that detects field lamp burns (power draw = 0.0W while dimming > 0%) and generates field tickets automatically.
 - **Municipal Double-Entry ERP**: Chart of Accounts, Journal Entries, real-time Balance Sheet (Assets = Liabilities + Equity), Profit & Loss statements, and Zone Budget variance tracking.
+- **One-Click CSV / Excel & Print Audit Engine**: Export street lights, fault tickets, ledgers, and financial statements directly into Excel-compatible CSVs with UTF-8 BOM, or print official audit reports via Ctrl+E and Ctrl+P.
 - **Role-Based Access Control (RBAC)**: Enforced segregation of duties between **Administrator (Grid Ops)** and **Accountant (Finance)**.
 - **Windows XP Olive Skeuomorphic UI**: Authentic 3D beveled chrome, sunken list views, taskbars, live status bar clock, and retro system dialogs with zero emojis and vector graphics.
 - **In-Page Windows XP Dialog Engine**: Custom in-page Windows XP MessageBox system replacing disruptive browser alert popups.
@@ -36,6 +37,8 @@
 |  | StreetLightService |  | FaultTicketService |  | AccountingService  | |
 |  +--------------------+  +--------------------+  +--------------------+ |
 |  | PowerSimulatorEngine (@Scheduled 5,000ms Automated Telemetry Loop) | |
+|  +--------------------+  +--------------------+  +--------------------+ |
+|  | CSV Export & Municipal Audit Print Formatters (Client-Side BOM Engine)|
 +-------------------------------------------------------------------------+
                                    | Spring Data JPA / Hibernate
                                    v
@@ -67,13 +70,19 @@
   - **Zone Budget Variance**: Tracks annual allocated funds vs. actual electricity spend per zone with utilization progress bars.
 - **Multi-Currency Support**: Instant currency conversion across INR (₹), USD ($), EUR (€), and GBP (£).
 
-### 4. Role-Based Access Control (RBAC) & Security
+### 4. Financial Audit & Operations Export (Excel / CSV / Print)
+- **One-Click CSV / Excel Export**: Instant client-side export for Street Lights Inventory, Fault Tickets, General Ledger, Balance Sheet, Profit & Loss, and Zone Budget Variance.
+- **Excel UTF-8 BOM Compatibility**: Automatically prepends `\uFEFF` ensuring multi-currency symbols (₹, $, €, £) and special characters render cleanly in Microsoft Excel.
+- **Municipal Print Audit Engine**: `@media print` layout formatting that hides desktop chrome and toolbars, generating clean, official high-contrast municipal audit statements with timestamped headers.
+- **Global Shortcuts**: `Ctrl+E` (Export Active View to CSV) and `Ctrl+P` (Print Municipal Audit Report).
+
+### 5. Role-Based Access Control (RBAC) & Security
 - **Mandatory Logon on Startup**: Every page open/reload requires authentication; background workspace is completely obscured until valid credentials are provided.
 - **Administrator Role (Admin / Grid Ops)**: Full privileges to register lights, adjust brightness, resolve/reopen fault tickets, and post ledger transactions.
 - **Accountant Role (Finance Only)**: Read-only access to street light hardware and fault tickets; full access to journal entries, ledgers, and financial statements.
 - **Protected User Switching**: Toolbar role switcher requires password re-authentication before elevating privileges.
 
-### 5. Authentic Windows XP Skeuomorphic UI
+### 6. Authentic Windows XP Skeuomorphic UI
 - **Windows XP Olive Green Palette**: Carefully tuned `#4a6b46` desktop radial gradient, `#ece9d8` dialog bodies, and `#716f64` 3D bevels.
 - **Tabs & Windows**: Active tabs blend seamlessly into content with crisp borders and subtle shadows.
 - **In-Page Message Box Engine**: Replaces native browser `alert()` popups with authentic Windows XP dialog boxes (`#modal-msgbox`).
