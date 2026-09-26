@@ -462,6 +462,82 @@ html, body {
   height: auto;
 }
 
+/* Power & Telemetry Tab Layout */
+.xp-power-layout {
+  display: flex;
+  gap: 14px;
+  flex: 1;
+  min-height: 0;
+  height: auto;
+  box-sizing: border-box;
+  align-items: stretch;
+}
+
+.xp-power-main-box {
+  flex: 1;
+  background: #faf9f5;
+  border: 1px solid #aca899;
+  border-radius: 3px;
+  box-shadow: inset 1px 1px 0 #ffffff, inset -1px -1px 0 #d4cfb8, 1px 1px 3px rgba(0, 0, 0, 0.08);
+  padding: 16px;
+  overflow-y: auto;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.xp-power-side-box {
+  width: 280px;
+  background: #faf9f5;
+  border: 1px solid #aca899;
+  border-radius: 3px;
+  box-shadow: inset 1px 1px 0 #ffffff, inset -1px -1px 0 #d4cfb8, 1px 1px 3px rgba(0, 0, 0, 0.08);
+  padding: 16px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.xp-power-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #d4cfb8;
+}
+
+.xp-pwr-icon-box {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  background: linear-gradient(to bottom, #F5F1E0, #DED9BE);
+  border: 1px solid #716f64;
+  border-radius: 3px;
+  box-shadow: inset 1px 1px 0 #ffffff, inset -1px -1px 0 #aca899, 1px 1px 3px rgba(0, 0, 0, 0.12);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+}
+
+.xp-groupbox {
+  border: 1px solid #aca899;
+  border-radius: 3px;
+  padding: 12px 14px;
+  background: #ffffff;
+  box-shadow: inset 1px 1px 0 #fafafa;
+}
+
+.xp-groupbox legend {
+  padding: 0 6px;
+  font-weight: bold;
+  font-size: 11px;
+  color: #243d1a;
+}
+
 .xp-list-view {
   width: 100%;
   border-collapse: collapse;

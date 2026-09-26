@@ -486,19 +486,24 @@
            TAB 5: System & Power Analytics
            =================================================================== -->
       <section class="tab-pane" id="tab-power">
-        <div style="display: flex; gap: 16px; height: 100%;">
+        <div class="xp-power-layout">
           <!-- Left: XP System Details Dialog Style Panel -->
-          <div style="flex: 1; border: 2px inset #aca899; padding: 16px; background: #faf9f6; overflow: auto;">
-            <div style="display: flex; align-items: center; gap: 16px; padding-bottom: 14px; border-bottom: 1px solid #ccc; margin-bottom: 14px;">
-              <div style="width: 36px; height: 36px; border: 1px solid #526f45; background: #d8e4d3; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 16px; color: #172414;">PWR</div>
+          <div class="xp-power-main-box">
+            <div class="xp-power-header">
+              <div class="xp-pwr-icon-box" title="Power Telemetry Engine">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M13 2L4 13.5H11.5L10.5 22L20 10.5H12.5L13 2Z" fill="#46673e" stroke="#243d1a" stroke-width="1.5" stroke-linejoin="round"/>
+                </svg>
+                <span style="font-size: 8px; font-weight: 800; color: #243d1a; letter-spacing: 0.5px; font-family: Tahoma, 'Segoe UI', sans-serif;">PWR</span>
+              </div>
               <div>
-                <h2 style="font-size: 15px; color: #172414;">CivicGrid Municipal Power Telemetry Engine</h2>
+                <h2 style="font-size: 14px; font-weight: bold; color: #172414; margin: 0 0 2px 0;">CivicGrid Municipal Power Telemetry Engine</h2>
                 <div style="color: #666; font-size: 11px;">Spring Boot 4.1.1 Scheduled Telemetry Simulation</div>
               </div>
             </div>
 
-            <fieldset style="border: 1px solid #aca899; padding: 12px; margin-bottom: 14px;">
-              <legend><strong>Real-time Telemetry Metrics</strong></legend>
+            <fieldset class="xp-groupbox">
+              <legend>Real-time Telemetry Metrics</legend>
               <table style="width: 100%; font-size: 11px; line-height: 2;">
                 <tr>
                   <td style="width: 45%; color: #666;">Simulation Cycle:</td>
@@ -519,8 +524,8 @@
               </table>
             </fieldset>
 
-            <fieldset style="border: 1px solid #aca899; padding: 12px;">
-              <legend><strong>Municipal Database Tables Verified</strong></legend>
+            <fieldset class="xp-groupbox">
+              <legend>Municipal Database Tables Verified</legend>
               <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; font-family: monospace; font-size: 11px;">
                 <div>[OK] street_lights</div>
                 <div>[OK] zones</div>
@@ -537,9 +542,9 @@
           </div>
 
           <!-- Right: Action Panel -->
-          <div style="width: 300px; border: 2px inset #aca899; padding: 14px; background: #faf9f6; display: flex; flex-direction: column; gap: 12px;">
-            <strong>System Actions</strong>
-            <p style="font-size: 10.5px; color: #555;">
+          <div class="xp-power-side-box">
+            <strong style="font-size: 12px; color: #172414;">System Actions</strong>
+            <p style="font-size: 10.5px; color: #555; margin: 0;">
               Use the controls below to trigger immediate updates from the Spring Boot simulation layer:
             </p>
             <button class="xp-btn" onclick="CivicGridApp.refreshAllData()" style="padding: 6px;">
