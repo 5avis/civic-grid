@@ -376,6 +376,17 @@ const CivicGridApp = (function () {
         newDimValue.textContent = `${e.target.value}%`;
       });
     }
+
+    // Global Keyboard Shortcuts (Ctrl+E: Export CSV, Ctrl+P: Print Audit)
+    window.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'e' || e.key === 'E')) {
+        e.preventDefault();
+        exportCurrentViewCsv();
+      } else if ((e.ctrlKey || e.metaKey) && (e.key === 'p' || e.key === 'P')) {
+        e.preventDefault();
+        printReport();
+      }
+    });
   }
 
   // Tab Navigation
@@ -1179,6 +1190,309 @@ const CivicGridApp = (function () {
   }
 
   // =========================================================================
+  // Module 6: CSV / Excel & Municipal Audit Print Exporters
+  // =========================================================================
+
+  function downloadCsv(filename, headers, rows) {
+    if (!rows || rows.length === 0) {
+      showXpAlert('Export Notice', 'No data records found to export for this view.');
+      return;
+    }
+
+    const escapeCsvCell = (val) => {
+      if (val === null || val === undefined) return '""';
+      const str = String(val);
+      if (/[",\r\n]/.test(str)) {
+        return `"${str.replace(/"/g, '""')}"`;
+      }
+      return `"${str}"`;
+    };
+
+    const headerLine = headers.map(escapeCsvCell).join(',');
+    const rowLines = rows.map((r) => r.map(escapeCsvCell).join(','));
+    // Prepend UTF-8 BOM (\uFEFF) so Excel correctly renders currency symbols (INR, USD, EUR, GBP)
+    const csvContent = '\uFEFF' + [headerLine, ...rowLines].join('\r\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    setStatus(`Exported ${filename} (${rows.length} records) successfully.`);
+  }
+
+  function exportStreetLightsCsv() {
+    if (!lightsCache || lightsCache.length === 0) {
+      showXpAlert('Export Notice', 'No street lights data currently loaded to export.');
+      return;
+    }
+
+    const filterVal = document.getElementById('zone-filter')?.value || 'ALL';
+    const searchVal = (document.getElementById('search-pole')?.value || '').trim().toLowerCase();
+
+    const filtered = lightsCache.filter((l) => {
+      const matchZone = filterVal === 'ALL' || String(l.zone?.id || l.zoneId) === filterVal;
+      const matchSearch = !searchVal || (l.poleCode && l.poleCode.toLowerCase().includes(searchVal));
+      return matchZone && matchSearch;
+    });
+
+    if (filtered.length === 0) {
+      showXpAlert('Export Notice', 'No street lights match the current filter criteria.');
+      return;
+    }
+
+    const headers = ['Light ID', 'Pole Code', 'Zone', 'Dimming %', 'Simulated Power Draw (Watts)', 'Operational Status'];
+    const rows = filtered.map((l) => [
+      l.id,
+      l.poleCode || '',
+      l.zone ? l.zone.name : (l.zoneId ? `Zone #${l.zoneId}` : 'Unassigned'),
+      `${l.dimmingPercentage}%`,
+      l.simulatedPowerDraw != null ? l.simulatedPowerDraw.toFixed(1) : '0.0',
+      l.status || 'ACTIVE'
+    ]);
+
+    const dateStr = new Date().toISOString().split('T')[0];
+    downloadCsv(`civicgrid_street_lights_${dateStr}.csv`, headers, rows);
+  }
+
+  function exportFaultTicketsCsv() {
+    if (!faultsCache || faultsCache.length === 0) {
+      showXpAlert('Export Notice', 'No fault tickets currently recorded.');
+      return;
+    }
+
+    const headers = ['Ticket Number', 'Street Light Pole', 'Fault Description', 'Logged Timestamp', 'Resolution Status'];
+    const rows = faultsCache.map((t) => [
+      t.ticketNumber || `#${t.id}`,
+      t.streetLight ? t.streetLight.poleCode : `#${t.streetLightId || '?'}`,
+      t.description || '',
+      t.createdAt ? new Date(t.createdAt).toLocaleString() : 'N/A',
+      t.status || 'NOT RESOLVED'
+    ]);
+
+    const dateStr = new Date().toISOString().split('T')[0];
+    downloadCsv(`civicgrid_fault_tickets_${dateStr}.csv`, headers, rows);
+  }
+
+  function exportLedgerCsv() {
+    if (!lastJournalEntries || lastJournalEntries.length === 0) {
+      showXpAlert('Export Notice', 'No journal entries in ledger to export.');
+      return;
+    }
+
+    const cfg = CURRENCIES[currentCurrency] || CURRENCIES.INR;
+    const rate = cfg.rate != null ? cfg.rate : 1.0;
+
+    const headers = [
+      'Entry #',
+      'Date',
+      'Account Code',
+      'Account Name',
+      `Debit (${cfg.code} ${cfg.symbol})`,
+      `Credit (${cfg.code} ${cfg.symbol})`,
+      'Description / Reference'
+    ];
+
+    let totalDebit = 0;
+    let totalCredit = 0;
+
+    const rows = lastJournalEntries.map((e) => {
+      const d = (parseFloat(e.debit || 0) * rate);
+      const c = (parseFloat(e.credit || 0) * rate);
+      totalDebit += d;
+      totalCredit += c;
+
+      return [
+        e.entryNumber || `#${e.id}`,
+        e.entryDate || e.date || '',
+        e.account ? e.account.code : (e.accountCode || ''),
+        e.account ? e.account.name : (e.accountName || ''),
+        d > 0 ? d.toFixed(2) : '0.00',
+        c > 0 ? c.toFixed(2) : '0.00',
+        e.description || e.reference || ''
+      ];
+    });
+
+    const isBalanced = Math.abs(totalDebit - totalCredit) < 0.01;
+    rows.push([
+      'TOTALS',
+      '',
+      '',
+      isBalanced ? 'BALANCED' : 'UNBALANCED',
+      totalDebit.toFixed(2),
+      totalCredit.toFixed(2),
+      `Verified double-entry ledger (${cfg.code})`
+    ]);
+
+    const dateStr = new Date().toISOString().split('T')[0];
+    downloadCsv(`civicgrid_general_ledger_${dateStr}.csv`, headers, rows);
+  }
+
+  function exportBalanceSheetCsv() {
+    if (!lastBalanceSheetData) {
+      showXpAlert('Export Notice', 'Balance sheet statement data is not loaded yet.');
+      return;
+    }
+
+    const cfg = CURRENCIES[currentCurrency] || CURRENCIES.INR;
+    const rate = cfg.rate != null ? cfg.rate : 1.0;
+    const d = lastBalanceSheetData;
+
+    const headers = ['Category', 'Account Code', 'Account Name', `Amount (${cfg.code} ${cfg.symbol})`];
+    const rows = [];
+
+    (d.assets || []).forEach((a) => {
+      rows.push(['ASSET', a.accountCode, a.accountName, ((parseFloat(a.balance || 0)) * rate).toFixed(2)]);
+    });
+    rows.push(['TOTAL', '', 'TOTAL ASSETS', ((parseFloat(d.totalAssets || 0)) * rate).toFixed(2)]);
+
+    (d.liabilities || []).forEach((l) => {
+      rows.push(['LIABILITY', l.accountCode, l.accountName, ((parseFloat(l.balance || 0)) * rate).toFixed(2)]);
+    });
+    rows.push(['TOTAL', '', 'TOTAL LIABILITIES', ((parseFloat(d.totalLiabilities || 0)) * rate).toFixed(2)]);
+
+    rows.push(['EQUITY', '3999', 'Retained Earnings / Operational Equity', ((parseFloat(d.retainedEarnings || 0)) * rate).toFixed(2)]);
+    rows.push(['TOTAL', '', 'TOTAL LIABILITIES & EQUITY', ((parseFloat(d.totalLiabilitiesAndEquity || 0)) * rate).toFixed(2)]);
+
+    const dateStr = new Date().toISOString().split('T')[0];
+    downloadCsv(`civicgrid_balance_sheet_${dateStr}.csv`, headers, rows);
+  }
+
+  function exportPnlCsv() {
+    if (!lastPnlData) {
+      showXpAlert('Export Notice', 'Profit & Loss statement data is not loaded yet.');
+      return;
+    }
+
+    const cfg = CURRENCIES[currentCurrency] || CURRENCIES.INR;
+    const rate = cfg.rate != null ? cfg.rate : 1.0;
+    const d = lastPnlData;
+
+    const headers = ['Classification', 'Account Code', 'Account Name', `Amount (${cfg.code} ${cfg.symbol})`];
+    const rows = [];
+
+    (d.income || []).forEach((i) => {
+      rows.push(['REVENUE', i.accountCode, i.accountName, ((parseFloat(i.balance || 0)) * rate).toFixed(2)]);
+    });
+    rows.push(['TOTAL', '', 'TOTAL REVENUE / FEES', ((parseFloat(d.totalIncome || 0)) * rate).toFixed(2)]);
+
+    (d.expenses || []).forEach((e) => {
+      rows.push(['EXPENSE', e.accountCode, e.accountName, ((parseFloat(e.balance || 0)) * rate).toFixed(2)]);
+    });
+    rows.push(['TOTAL', '', 'TOTAL OPERATING EXPENSES', ((parseFloat(d.totalExpenses || 0)) * rate).toFixed(2)]);
+
+    const net = parseFloat(d.netProfitOrLoss || 0) * rate;
+    rows.push(['NET RESULT', '', 'NET OPERATING MARGIN', net.toFixed(2)]);
+
+    const dateStr = new Date().toISOString().split('T')[0];
+    downloadCsv(`civicgrid_profit_and_loss_${dateStr}.csv`, headers, rows);
+  }
+
+  function exportBudgetCsv() {
+    if (!lastBudgetData) {
+      showXpAlert('Export Notice', 'Budget variance statement data is not loaded yet.');
+      return;
+    }
+
+    const cfg = CURRENCIES[currentCurrency] || CURRENCIES.INR;
+    const rate = cfg.rate != null ? cfg.rate : 1.0;
+    const d = lastBudgetData;
+
+    const headers = [
+      'Zone Name',
+      'Fiscal Year',
+      `Allocated Budget (${cfg.code} ${cfg.symbol})`,
+      `Actual Spend (${cfg.code} ${cfg.symbol})`,
+      `Variance (${cfg.code} ${cfg.symbol})`,
+      'Utilization %',
+      'Status'
+    ];
+
+    const rows = (d.zoneReports || []).map((b) => {
+      const planned = (parseFloat(b.plannedAmount ?? b.allocatedBudget ?? 0)) * rate;
+      const actual = (parseFloat(b.actualAmount ?? b.actualSpend ?? 0)) * rate;
+      const variance = (parseFloat(b.varianceAmount ?? b.variance ?? 0)) * rate;
+      const util = b.utilizationPercentage != null ? Math.round(b.utilizationPercentage) : (planned > 0 ? Math.round((actual / planned) * 100) : 0);
+      const isOver = b.status === 'OVER_BUDGET' || variance < 0;
+
+      return [
+        b.zoneName || 'Zone',
+        `FY${d.fiscalYear || 2026}`,
+        planned.toFixed(2),
+        actual.toFixed(2),
+        variance.toFixed(2),
+        `${util}%`,
+        isOver ? 'OVER_BUDGET' : 'ON_TRACK'
+      ];
+    });
+
+    const totPlanned = (parseFloat(d.totalPlanned || 0)) * rate;
+    const totActual = (parseFloat(d.totalActual || 0)) * rate;
+    const totVariance = (parseFloat(d.totalVariance || 0)) * rate;
+
+    rows.push([
+      'TOTAL CONSOLIDATED GRID BUDGET',
+      `FY${d.fiscalYear || 2026}`,
+      totPlanned.toFixed(2),
+      totActual.toFixed(2),
+      totVariance.toFixed(2),
+      totPlanned > 0 ? `${Math.round((totActual / totPlanned) * 100)}%` : '0%',
+      totVariance < 0 ? 'OVER_BUDGET' : 'ON_TRACK'
+    ]);
+
+    const dateStr = new Date().toISOString().split('T')[0];
+    downloadCsv(`civicgrid_budget_variance_${dateStr}.csv`, headers, rows);
+  }
+
+  function exportCurrentViewCsv() {
+    if (activeTab === 'lights') {
+      exportStreetLightsCsv();
+    } else if (activeTab === 'faults') {
+      exportFaultTicketsCsv();
+    } else if (activeTab === 'accounting') {
+      exportLedgerCsv();
+    } else if (activeTab === 'reports') {
+      if (activeSubTab === 'balance-sheet') exportBalanceSheetCsv();
+      else if (activeSubTab === 'pnl') exportPnlCsv();
+      else if (activeSubTab === 'budget') exportBudgetCsv();
+      else exportBalanceSheetCsv();
+    } else {
+      showXpAlert('Export', 'Please switch to Street Lights, Fault Tickets, Accounting Ledger, or Financial Reports to export CSV.');
+    }
+  }
+
+  function printReport() {
+    const metaEl = document.getElementById('print-audit-meta');
+    let moduleTitle = 'Street Lights & Grid Controller';
+    if (activeTab === 'lights') {
+      moduleTitle = 'Street Lights Inventory & Power Telemetry';
+    } else if (activeTab === 'faults') {
+      moduleTitle = 'Automated Grid Fault Tickets & Alert Ledger';
+    } else if (activeTab === 'accounting') {
+      moduleTitle = 'General Ledger & Double-Entry Accounting Statement';
+    } else if (activeTab === 'reports') {
+      if (activeSubTab === 'balance-sheet') moduleTitle = 'Municipal Balance Sheet Statement (Assets, Liabilities & Equity)';
+      else if (activeSubTab === 'pnl') moduleTitle = 'Profit & Loss Statement (Operating Revenue & Utility Expenses)';
+      else if (activeSubTab === 'budget') moduleTitle = 'Zone Budget Variance & Expenditure Audit';
+      else moduleTitle = 'Municipal Financial Statement';
+    } else if (activeTab === 'power') {
+      moduleTitle = 'Grid Power Analytics & Telemetry Summary';
+    }
+
+    if (metaEl) {
+      metaEl.innerHTML = `Audit Module: <strong>${moduleTitle}</strong> &bull; Currency: <strong>${currentCurrency}</strong> &bull; Generated: <strong>${new Date().toLocaleString()}</strong> &bull; CivicGrid Core Operations`;
+    }
+
+    setStatus(`Preparing ${moduleTitle} for print / audit export...`);
+    window.print();
+  }
+
+  // =========================================================================
   // Global Refresh & Modal Helpers
   // =========================================================================
 
@@ -1256,7 +1570,15 @@ const CivicGridApp = (function () {
     openAboutDialog,
     showXpAlert,
     setCurrency,
-    formatCurrency
+    formatCurrency,
+    exportCurrentViewCsv,
+    exportStreetLightsCsv,
+    exportFaultTicketsCsv,
+    exportLedgerCsv,
+    exportBalanceSheetCsv,
+    exportPnlCsv,
+    exportBudgetCsv,
+    printReport
   };
 })();
 

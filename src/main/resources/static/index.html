@@ -45,6 +45,15 @@
             <span style="color: #666; font-size: 10px;">F5</span>
           </div>
           <div class="xp-dropdown-divider"></div>
+          <div class="xp-dropdown-entry" onclick="CivicGridApp.exportCurrentViewCsv()">
+            <span>Export Active View to CSV...</span>
+            <span style="color: #666; font-size: 10px;">Ctrl+E</span>
+          </div>
+          <div class="xp-dropdown-entry" onclick="CivicGridApp.printReport()">
+            <span>Print Audit Report...</span>
+            <span style="color: #666; font-size: 10px;">Ctrl+P</span>
+          </div>
+          <div class="xp-dropdown-divider"></div>
           <div class="xp-dropdown-entry" onclick="location.reload()">
             <span>Exit / Reload</span>
           </div>
@@ -146,6 +155,14 @@
         <span>Refresh All</span>
       </button>
 
+      <button class="xp-tb-btn" onclick="CivicGridApp.exportCurrentViewCsv()" title="Export Active View to CSV / Excel Spreadsheet">
+        <span>Export CSV</span>
+      </button>
+
+      <button class="xp-tb-btn" onclick="CivicGridApp.printReport()" title="Print Municipal Audit Report">
+        <span>Print Audit</span>
+      </button>
+
       <div class="xp-tb-sep"></div>
 
       <!-- User Role Selector & Currency -->
@@ -233,6 +250,12 @@
     <!-- 6. Main Workspace -->
     <main id="workspace">
 
+      <!-- Print Audit Document Header (Visible only when printed) -->
+      <div class="print-header">
+        <h1>CivicGrid — Municipal Infrastructure &amp; Financial Audit Statement</h1>
+        <p id="print-audit-meta">City Core Systems &bull; Generated from MariaDB Ledger</p>
+      </div>
+
       <!-- ===================================================================
            TAB 1: Street Lights & Grid Controller
            =================================================================== -->
@@ -252,6 +275,9 @@
           <div class="xp-controls-group">
             <button class="xp-btn" id="btn-register-light-pane" onclick="CivicGridApp.openRegisterLightModal()">
               <span>Register New Light...</span>
+            </button>
+            <button class="xp-btn" onclick="CivicGridApp.exportStreetLightsCsv()" title="Export Street Lights Inventory to CSV / Excel">
+              <span>Export CSV</span>
             </button>
             <button class="xp-btn" onclick="CivicGridApp.refreshAllData()">
               <span>Refresh List</span>
@@ -291,9 +317,14 @@
               The @Scheduled power simulator scans every 5s. If a street light has dimming &gt; 0% but measured draw is 0.0W during night hours, an automated fault ticket is logged and light status is set to FAULTY.
             </div>
           </div>
-          <button class="xp-btn" onclick="CivicGridApp.refreshAllData()">
-            <span>Refresh Tickets</span>
-          </button>
+          <div class="xp-controls-group">
+            <button class="xp-btn" onclick="CivicGridApp.exportFaultTicketsCsv()" title="Export Fault Tickets to CSV / Excel">
+              <span>Export CSV</span>
+            </button>
+            <button class="xp-btn" onclick="CivicGridApp.refreshAllData()">
+              <span>Refresh Tickets</span>
+            </button>
+          </div>
         </div>
 
         <div class="xp-table-wrapper">
@@ -328,6 +359,12 @@
           <div class="xp-controls-group">
             <button class="xp-btn" id="btn-new-tx-pane" onclick="CivicGridApp.openNewTransactionModal()">
               <span>Record New Transaction...</span>
+            </button>
+            <button class="xp-btn" onclick="CivicGridApp.exportLedgerCsv()" title="Export General Ledger to CSV / Excel">
+              <span>Export CSV</span>
+            </button>
+            <button class="xp-btn" onclick="CivicGridApp.printReport()" title="Print General Ledger Audit Sheet">
+              <span>Print Ledger</span>
             </button>
             <button class="xp-btn" onclick="CivicGridApp.refreshAllData()">
               <span>Refresh Ledger</span>
@@ -371,7 +408,11 @@
         <div class="subtab-pane" id="subtab-balance-sheet">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
             <div id="bs-balance-check">Loading statement...</div>
-            <button class="xp-btn xp-btn-sm" onclick="CivicGridApp.refreshAllData()">Refresh</button>
+            <div style="display: flex; gap: 6px;">
+              <button class="xp-btn xp-btn-sm" onclick="CivicGridApp.exportBalanceSheetCsv()" title="Export Balance Sheet to CSV / Excel">Export CSV</button>
+              <button class="xp-btn xp-btn-sm" onclick="CivicGridApp.printReport()" title="Print Municipal Balance Sheet">Print Report</button>
+              <button class="xp-btn xp-btn-sm" onclick="CivicGridApp.refreshAllData()">Refresh</button>
+            </div>
           </div>
 
           <div class="xp-reports-table-row">
@@ -415,7 +456,11 @@
         <div class="subtab-pane" id="subtab-pnl" style="display: none;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
             <div id="pnl-net-result">Loading statement...</div>
-            <button class="xp-btn xp-btn-sm" onclick="CivicGridApp.refreshAllData()">Refresh</button>
+            <div style="display: flex; gap: 6px;">
+              <button class="xp-btn xp-btn-sm" onclick="CivicGridApp.exportPnlCsv()" title="Export Profit &amp; Loss to CSV / Excel">Export CSV</button>
+              <button class="xp-btn xp-btn-sm" onclick="CivicGridApp.printReport()" title="Print Profit &amp; Loss Statement">Print Report</button>
+              <button class="xp-btn xp-btn-sm" onclick="CivicGridApp.refreshAllData()">Refresh</button>
+            </div>
           </div>
 
           <div class="xp-reports-table-row">
@@ -459,7 +504,11 @@
         <div class="subtab-pane" id="subtab-budget" style="display: none;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
             <div><strong>Zone Electricity Expenditure vs. Allocated Annual Budget</strong></div>
-            <button class="xp-btn xp-btn-sm" onclick="CivicGridApp.refreshAllData()">Refresh</button>
+            <div style="display: flex; gap: 6px;">
+              <button class="xp-btn xp-btn-sm" onclick="CivicGridApp.exportBudgetCsv()" title="Export Budget Variance to CSV / Excel">Export CSV</button>
+              <button class="xp-btn xp-btn-sm" onclick="CivicGridApp.printReport()" title="Print Budget Variance Report">Print Report</button>
+              <button class="xp-btn xp-btn-sm" onclick="CivicGridApp.refreshAllData()">Refresh</button>
+            </div>
           </div>
 
           <div class="xp-table-wrapper xp-report-table-wrapper">

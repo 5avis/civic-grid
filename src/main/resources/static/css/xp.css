@@ -902,3 +902,118 @@ html, body {
   border: 1px solid #ded8c5;
   color: #3b3724;
 }
+
+/* ==========================================================================
+   Print Stylesheet for Municipal Audits & Financial Reports
+   ========================================================================== */
+
+.print-header {
+  display: none;
+}
+
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    font-size: 10pt !important;
+  }
+
+  #title-bar,
+  #menu-bar,
+  #toolbar,
+  #top-tabs,
+  .xp-subtabs,
+  .xp-pane-header,
+  #status-bar,
+  .xp-modal-overlay,
+  .xp-btn,
+  .xp-tb-btn,
+  button,
+  select,
+  input {
+    display: none !important;
+  }
+
+  #xp-window {
+    border: none !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+  }
+
+  #workspace {
+    overflow: visible !important;
+    height: auto !important;
+    padding: 0 !important;
+  }
+
+  .tab-pane {
+    display: none !important;
+    overflow: visible !important;
+    height: auto !important;
+    padding: 0 !important;
+  }
+
+  .tab-pane.active {
+    display: block !important;
+  }
+
+  .subtab-pane {
+    display: none !important;
+  }
+
+  .subtab-pane:not([style*="display: none"]) {
+    display: block !important;
+  }
+
+  .xp-table-wrapper,
+  .xp-report-table-wrapper,
+  .xp-power-main-box,
+  .xp-power-side-box {
+    border: 1px solid #333333 !important;
+    box-shadow: none !important;
+    overflow: visible !important;
+    max-height: none !important;
+    height: auto !important;
+    background: #ffffff !important;
+  }
+
+  .xp-list-view {
+    border-collapse: collapse !important;
+    width: 100% !important;
+  }
+
+  .xp-list-view th,
+  .xp-list-view td {
+    border: 1px solid #444444 !important;
+    padding: 5px 8px !important;
+    color: #000000 !important;
+    background: #ffffff !important;
+  }
+
+  .xp-list-view th {
+    background: #f0f0f0 !important;
+    font-weight: bold !important;
+  }
+
+  .print-header {
+    display: block !important;
+    margin-bottom: 16px;
+    border-bottom: 2px solid #000000;
+    padding-bottom: 8px;
+  }
+
+  .print-header h1 {
+    font-size: 15pt;
+    margin: 0 0 4px 0;
+    color: #000000;
+  }
+
+  .print-header p {
+    font-size: 9pt;
+    margin: 0;
+    color: #555555;
+  }
+}
