@@ -213,7 +213,7 @@ const CivicGridApp = (function () {
 
   function cancelLogin() {
     if (!isLoggedIn) {
-      alert('Please enter the password to log on to CivicGrid.');
+      showXpAlert('CivicGrid Log On', 'Please enter the password to log on to CivicGrid.');
       return;
     }
     const userSelect = document.getElementById('user-role-select');
@@ -613,7 +613,7 @@ const CivicGridApp = (function () {
   // Quick Dimming helper
   async function quickSetDimming(lightId, percent) {
     if (currentUserRole !== 'ADMIN') {
-      alert('Access Denied: Only Administrator accounts can adjust street light brightness.');
+      showXpAlert('Access Denied', 'Only Administrator accounts can adjust street light brightness.');
       return;
     }
     try {
@@ -634,14 +634,14 @@ const CivicGridApp = (function () {
       await fetchPowerSummary();
       setStatus(`Light #${lightId} dimming set to ${percent}%.`);
     } catch (err) {
-      alert('Failed to set dimming: ' + err.message);
+      showXpAlert('Dimming Error', 'Failed to set dimming: ' + err.message);
     }
   }
 
   // Modal: Register Street Light
   function openRegisterLightModal() {
     if (currentUserRole !== 'ADMIN') {
-      alert('Access Denied: Only Administrator accounts can register new street lights.');
+      showXpAlert('Access Denied', 'Only Administrator accounts can register new street lights.');
       return;
     }
     document.getElementById('new-light-form')?.reset();
@@ -652,7 +652,7 @@ const CivicGridApp = (function () {
   async function handleRegisterLightSubmit(e) {
     e.preventDefault();
     if (currentUserRole !== 'ADMIN') {
-      alert('Access Denied: Only Administrator accounts can register new street lights.');
+      showXpAlert('Access Denied', 'Only Administrator accounts can register new street lights.');
       return;
     }
     const poleCode = document.getElementById('new-light-pole').value.trim();
@@ -660,7 +660,7 @@ const CivicGridApp = (function () {
     const dimmingPercentage = parseInt(document.getElementById('new-light-dimming').value, 10);
 
     if (!poleCode) {
-      alert('Please enter a pole code.');
+      showXpAlert('Input Required', 'Please enter a pole code.');
       return;
     }
 
@@ -685,7 +685,7 @@ const CivicGridApp = (function () {
       await fetchPowerSummary();
       setStatus(`Light pole ${poleCode} registered successfully.`);
     } catch (err) {
-      alert('Error registering light: ' + err.message);
+      showXpAlert('Registration Error', 'Error registering light: ' + err.message);
     }
   }
 
@@ -694,7 +694,7 @@ const CivicGridApp = (function () {
 
   function openDimmingModal(id, poleCode, currentDim) {
     if (currentUserRole !== 'ADMIN') {
-      alert('Access Denied: Only Administrator accounts can adjust street light brightness.');
+      showXpAlert('Access Denied', 'Only Administrator accounts can adjust street light brightness.');
       return;
     }
     currentDimmingLightId = id;
@@ -708,7 +708,7 @@ const CivicGridApp = (function () {
     e.preventDefault();
     if (!currentDimmingLightId) return;
     if (currentUserRole !== 'ADMIN') {
-      alert('Access Denied: Only Administrator accounts can adjust street light brightness.');
+      showXpAlert('Access Denied', 'Only Administrator accounts can adjust street light brightness.');
       return;
     }
 
@@ -734,7 +734,7 @@ const CivicGridApp = (function () {
       await fetchPowerSummary();
       setStatus(`Light #${currentDimmingLightId} dimming updated.`);
     } catch (err) {
-      alert('Error updating dimming: ' + err.message);
+      showXpAlert('Dimming Error', 'Error updating dimming: ' + err.message);
     }
   }
 
@@ -815,7 +815,7 @@ const CivicGridApp = (function () {
 
   async function toggleFaultTicket(ticketId) {
     if (currentUserRole !== 'ADMIN') {
-      alert('Access Denied: Only Admin can resolve or reopen fault tickets.');
+      showXpAlert('Access Denied', 'Only Admin accounts can resolve or reopen fault tickets.');
       return;
     }
     try {
@@ -838,7 +838,7 @@ const CivicGridApp = (function () {
       await fetchStreetLights();
       await fetchPowerSummary();
     } catch (err) {
-      alert('Error updating fault ticket: ' + err.message);
+      showXpAlert('Fault Ticket Error', 'Error updating fault ticket: ' + err.message);
       setStatus('Failed to update fault ticket.');
     }
   }
@@ -941,7 +941,7 @@ const CivicGridApp = (function () {
     const description = document.getElementById('tx-desc').value.trim();
 
     if (!type || isNaN(amount) || amount <= 0 || !accountCode) {
-      alert('Please fill in transaction type, valid amount > 0, and target account.');
+      showXpAlert('Validation Error', 'Please fill in transaction type, valid amount > 0, and target account.');
       return;
     }
 
@@ -966,10 +966,10 @@ const CivicGridApp = (function () {
       closeModal('modal-transaction');
       await fetchJournalEntries();
       await fetchReportData();
-      alert(`Success! Transaction posted.\nDocument: ${result.documentNumber || ''}\nJournal Entry: ${result.journalEntryNumber || 'Created'}\nAmount: ${formatCurrency(parseFloat(result.amount != null ? result.amount : baseUsdAmount))}`);
+      showXpAlert('Transaction Posted', `Success! Transaction posted.\nDocument: ${result.documentNumber || ''}\nJournal Entry: ${result.journalEntryNumber || 'Created'}\nAmount: ${formatCurrency(parseFloat(result.amount != null ? result.amount : baseUsdAmount))}`);
       setStatus(`Transaction posted to ledger.`);
     } catch (err) {
-      alert('Failed to post transaction: ' + err.message);
+      showXpAlert('Transaction Error', 'Failed to post transaction: ' + err.message);
     }
   }
 
@@ -1205,13 +1205,28 @@ const CivicGridApp = (function () {
       .replace(/"/g, '&quot;');
   }
 
+  function showXpAlert(title, message) {
+    const titleEl = document.getElementById('msgbox-title');
+    const contentEl = document.getElementById('msgbox-content');
+    if (titleEl) titleEl.textContent = title || 'CivicGrid System Information';
+    if (contentEl) contentEl.textContent = message || '';
+
+    const modal = document.getElementById('modal-msgbox');
+    if (modal) {
+      modal.classList.add('open');
+      const okBtn = document.getElementById('btn-msgbox-ok');
+      setTimeout(() => okBtn?.focus(), 80);
+    }
+  }
+
   function openAboutDialog() {
-    alert(
+    showXpAlert(
+      "About CivicGrid",
       "CivicGrid Municipal Controller & ERP Accounting\n" +
       "Version: 1.0 (Service Pack 1)\n" +
       "UI Style: Windows XP Luna / Olive Skeuomorphic Theme\n" +
       "Backend: Spring Boot 4.1.1 + MariaDB 13.0\n" +
-      "Power Simulator: @Scheduled (5000ms loop with night fault detection)"
+      "Power Simulator: @Scheduled (5,000 ms telemetry loop with night fault detection)"
     );
   }
 
@@ -1239,6 +1254,7 @@ const CivicGridApp = (function () {
     cancelLogin,
     closeModal,
     openAboutDialog,
+    showXpAlert,
     setCurrency,
     formatCurrency
   };

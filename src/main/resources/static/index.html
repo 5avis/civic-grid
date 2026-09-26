@@ -80,7 +80,7 @@
           <div class="xp-dropdown-entry" onclick="CivicGridApp.refreshAllData()">
             <span>Run Telemetry Sync</span>
           </div>
-          <div class="xp-dropdown-entry" onclick="alert('Automatic telemetry polling is active every 5000ms.');">
+          <div class="xp-dropdown-entry" onclick="CivicGridApp.showXpAlert('Telemetry Simulation', 'Automatic telemetry polling is active every 5,000 ms (@Scheduled loop).');">
             <span>Power Simulation: 5s Interval</span>
           </div>
           <div class="xp-dropdown-divider"></div>
@@ -793,6 +793,32 @@
           <button type="button" class="xp-btn" onclick="CivicGridApp.closeModal('modal-transaction')">Cancel</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       MODAL 4: Windows XP Classic Message Box (In-Page Dialog)
+       ========================================================================= -->
+  <div class="xp-modal-overlay" id="modal-msgbox" style="z-index: 1000000;">
+    <div class="xp-dialog-box" style="width: 440px; max-width: 90vw;">
+      <div class="xp-title-bar">
+        <div class="xp-title-content">
+          <img src="icons8-info.svg?v=3" width="16" height="16" alt="" style="width: 16px; height: 16px; margin-right: 6px;">
+          <span id="msgbox-title">CivicGrid System Information</span>
+        </div>
+        <button class="xp-win-btn btn-close" onclick="CivicGridApp.closeModal('modal-msgbox')">X</button>
+      </div>
+
+      <div class="xp-dialog-body" style="padding: 16px 20px; display: flex; gap: 16px; align-items: flex-start;">
+        <div style="width: 40px; height: 40px; min-width: 40px; background: linear-gradient(to bottom, #F5F1E0, #DED9BE); border: 1px solid #716f64; border-radius: 3px; box-shadow: inset 1px 1px 0 #ffffff, inset -1px -1px 0 #aca899; display: flex; align-items: center; justify-content: center;">
+          <img src="icons8-info.svg?v=3" width="22" height="22" alt="" style="width: 22px; height: 22px;">
+        </div>
+        <div style="flex: 1; font-size: 11.5px; line-height: 1.6; color: #172414; word-break: break-word; white-space: pre-wrap;" id="msgbox-content"></div>
+      </div>
+
+      <div class="xp-dialog-footer" style="display: flex; justify-content: flex-end; padding: 10px 16px;">
+        <button type="button" class="xp-btn xp-btn-default" style="min-width: 80px; font-weight: bold;" onclick="CivicGridApp.closeModal('modal-msgbox')" id="btn-msgbox-ok">OK</button>
+      </div>
     </div>
   </div>
 
